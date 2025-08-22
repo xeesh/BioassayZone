@@ -39,10 +39,10 @@
                 </div>
                 <div class="col-auto">
                     <div class="btn-group">
-                        <a href="{{ url_for('my_assays') }}" class="btn btn-outline-secondary">
+                        <a href="/my_assays" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-1"></i>Back to Assays
                         </a>
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                        <a href="/" class="btn btn-outline-primary">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </div>
@@ -199,13 +199,13 @@
                         <div class="card-body">
                             <div class="btn-group" role="group">
                                 {% if not assay.approved and user.has_permission('electronic_sign') %}
-                                <a href="{{ url_for('signatures.sign_report', assay_id=assay.id) }}" class="btn btn-success">
+                                <a href="/signatures/sign_report/{{ assay.id }}" class="btn btn-success">
                                     <i class="fas fa-digital-tachograph me-1"></i>Apply Electronic Signature
                                 </a>
                                 {% endif %}
                                 
                                 {% if assay.analyst_id == user.id and assay.status == 'active' %}
-                                <a href="{{ url_for('zone_analysis') }}" class="btn btn-warning" 
+                                <a href="/zone_analysis" class="btn btn-warning" 
                                    onclick="sessionStorage.setItem('resume_assay', '{{ assay.id }}')">
                                     <i class="fas fa-edit me-1"></i>Continue Analysis
                                 </a>

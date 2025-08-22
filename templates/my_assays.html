@@ -117,23 +117,23 @@
                     </div>
                     
                     <nav class="nav flex-column">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                        <a class="nav-link" href="/">
                             <i class="fas fa-tachometer-alt"></i>Dashboard
                         </a>
-                        <a class="nav-link" href="{{ url_for('zone_analysis') }}">
+                        <a class="nav-link" href="/zone_analysis">
                             <i class="fas fa-search"></i>Zone Analysis
                         </a>
-                        <a class="nav-link active" href="{{ url_for('my_assays') }}">
+                        <a class="nav-link active" href="/my_assays">
                             <i class="fas fa-flask"></i>Assay Management
                         </a>
-                        <a class="nav-link" href="{{ url_for('compliance') }}">
+                        <a class="nav-link" href="/compliance">
                             <i class="fas fa-shield-alt"></i>Compliance
                         </a>
-                        <a class="nav-link" href="{{ url_for('reports') }}">
+                        <a class="nav-link" href="/reports">
                             <i class="fas fa-chart-bar"></i>Reports
                         </a>
                         {% if user.has_permission('manage_users') %}
-                        <a class="nav-link" href="{{ url_for('manage_users') }}">
+                        <a class="nav-link" href="/manage_users">
                             <i class="fas fa-users"></i>User Management
                         </a>
                         {% endif %}
@@ -238,7 +238,7 @@
                         <div class="col-md-4">
                             <div class="filter-card text-center">
                                 <h6 class="mb-3">Quick Actions</h6>
-                                <a href="{{ url_for('zone_analysis') }}" class="btn btn-primary">
+                                <a href="/zone_analysis" class="btn btn-primary">
                                     <i class="fas fa-plus me-2"></i>New Analysis
                                 </a>
                             </div>
@@ -295,18 +295,18 @@
                                         </div>
                                         <div class="col-md-3">
                                             <div class="text-end">
-                                                <a href="{{ url_for('view_assay', assay_id=assay.id) }}" class="btn btn-outline-primary btn-sm mb-2 d-block">
+                                                <a href="/view_assay/{{ assay.id }}" class="btn btn-outline-primary btn-sm mb-2 d-block">
                                                     <i class="fas fa-eye me-1"></i>View Details
                                                 </a>
                                                 
                                                 {% if not assay.approved and user.has_permission('electronic_sign') %}
-                                                <a href="{{ url_for('signatures.sign_report', assay_id=assay.id) }}" class="btn btn-outline-success btn-sm d-block">
+                                                <a href="/signatures/sign_report/{{ assay.id }}" class="btn btn-outline-success btn-sm d-block">
                                                     <i class="fas fa-digital-tachograph me-1"></i>Sign Report
                                                 </a>
                                                 {% endif %}
                                                 
                                                 {% if assay.analyst_id == user.id and assay.status == 'active' %}
-                                                <a href="{{ url_for('analysis') }}" class="btn btn-outline-warning btn-sm mt-2 d-block" 
+                                                <a href="/analysis" class="btn btn-outline-warning btn-sm mt-2 d-block" 
                                                    onclick="sessionStorage.setItem('resume_assay', '{{ assay.id }}')">
                                                     <i class="fas fa-edit me-1"></i>Continue Analysis
                                                 </a>
@@ -323,7 +323,7 @@
                                 <i class="fas fa-flask fa-4x text-muted mb-3"></i>
                                 <h4 class="text-muted">No Assays Found</h4>
                                 <p class="text-muted">Start by creating your first bioassay analysis.</p>
-                                <a href="{{ url_for('zone_analysis') }}" class="btn btn-primary">
+                                <a href="/zone_analysis" class="btn btn-primary">
                                     <i class="fas fa-plus me-2"></i>Create New Analysis
                                 </a>
                             </div>
