@@ -1,0 +1,181 @@
+[⚠️ Suspicious Content] Project Plan: USP-81 / 21 CFR Part 11 Compliant Bioassay Zonereader
+
+This document outlines the plan for developing a .NET C# desktop application for reading and analyzing microbial inhibition zones from scanned Petri dishes, ensuring compliance with pharmaceutical industry standards.
+
+1. Core Objective & Compliance Strategy
+
+USP-81 (Antibiotics—Microbial Assays): The application's calculation engine must correctly implement the statistical procedures defined in this chapter, typically involving Analysis of Variance (ANOVA) for parallel line assays (e.g., 2+2, 3+3 dose designs) to determine potency.
+
+FDA 21 CFR Part 11 (Electronic Records; Electronic Signatures): This is a system-wide requirement that impacts every module. The core principles are:
+
+Data Integrity: Data must be securely stored and cannot be altered without detection.
+
+Audit Trails: All actions (creation, modification, deletion of data) must be logged with a timestamp, user ID, and reason for change.
+
+User Authentication: Secure login/logout procedures with role-based access control.
+
+Electronic Signatures: A legally binding equivalent to a handwritten signature, requiring user ID and password for application.
+
+2. Recommended Technology Stack
+
+Framework: .NET 8 (or latest stable version).
+
+Application Type: WPF (Windows Presentation Foundation). This is ideal for a rich desktop UI, excellent data binding capabilities (MVVM pattern), and powerful controls for displaying images and data grids.
+
+Database: SQL Server Express. It's free, robust, and provides the security and transaction logging necessary for a compliant system. SQLite is too simplistic for the required audit and security features.
+
+Data Access: Entity Framework Core (EF Core). An Object-Relational Mapper (ORM) that simplifies database interactions and helps manage the database schema.
+
+Image Processing: OpenCVSharp. A .NET wrapper for OpenCV, the industry-standard computer vision library. It is highly powerful for tasks like circle detection, which is central to this project.
+
+Reporting: QuestPDF or PdfSharp. Libraries for programmatically creating PDF reports of the final assay results.
+
+Scanner Integration: TWAIN/WIA Library. You will need a .NET library that can interface with scanner drivers. There are several available on NuGet (e.g., NTwain).
+
+3. Application Architecture (Modules)
+
+Here are the essential modules your application will need:
+
+🔐 Module 1: Security & User Management (21 CFR Part 11)
+
+Functionality:
+
+Secure user login screen.
+
+Password policies (complexity, expiration, history).
+
+Role-based access control (e.g., Analyst, Supervisor, Administrator).
+
+Analyst: Can run assays and process data but cannot sign off on final reports.
+
+Supervisor: Can review, approve, and electronically sign reports.
+
+Administrator: Manages user accounts and system settings.
+
+Database Tables: Users, Roles, UserRoles.
+
+📝 Module 2: Audit Trail Engine (21 CFR Part 11)
+
+Functionality:
+
+A centralized service that logs every critical action.
+
+Logs must be secure, timestamped, and un-editable.
+
+Records the "who, what, when, and why" for all data changes.
+
+Example log entry: [2023-10-27 14:32:15] User 'supervisor_jane' MODIFIED Assay 'Penicillin_Lot_ABC' - Reason: 'Corrected initial sample concentration value.'
+
+Database Table: AuditLog.
+
+🖼️ Module 3: Image Acquisition & Processing
+
+Functionality:
+
+Initiate a scan from a connected TWAIN-compliant flatbed scanner.
+
+Load an existing image file (e.g., TIFF, PNG) for processing.
+
+Automated Zone Detection:
+
+Preprocessing: Convert the image to grayscale, apply Gaussian blur to reduce noise.
+
+Petri Dish Detection (Optional but recommended): Identify the circular boundary of the Petri dish to define the region of interest.
+
+Zone Detection: Use the Hough Circle Transform algorithm from OpenCV to detect all circular inhibition zones.
+
+Diameter Measurement: Calculate the diameter of each detected circle in pixels and convert it to millimeters based on the scanner's DPI.
+
+Manual Override: Allow users to manually draw/adjust circles if the algorithm fails, with the manual action being recorded in the audit trail.
+
+Key Challenge: Handling variable lighting, shadows, and agar imperfections. The image processing parameters (thresholds, etc.) may need to be configurable.
+
+🔬 Module 4: Assay Management & Data Entry
+
+Functionality:
+
+Create and define new assays (e.g., "Penicillin Potency vs. Standard Lot X").
+
+Select assay type (e.g., USP 2+2, 3+3).
+
+Assign standards and samples to positions on the Petri dish template.
+
+Link scanned images/dishes to the assay.
+
+Display the measured zone diameters in a data grid next to the corresponding sample/standard.
+
+Database Tables: Assays, PetriDishes, ZoneMeasurements.
+
+📊 Module 5: Calculation Engine (USP-81)
+
+Functionality:
+
+Takes the validated zone diameter data as input.
+
+Performs statistical calculations as per USP-81 (ANOVA).
+
+Calculates assay validity tests (e.g., regression, parallelism).
+
+Computes the final potency, confidence limits, and other key results.
+
+Implementation: This will be a pure C# class library with no UI dependencies, making it easy to test and validate.
+
+📄 Module 6: Reporting & Electronic Signatures
+
+Functionality:
+
+Generate a comprehensive, multi-page PDF report.
+
+The report must be locked and secured.
+
+Report Content: Assay details, raw data (zone diameters), statistical analysis summary, validity results, final potency, and a complete audit trail for that specific assay.
+
+Electronic Signature Workflow:
+
+A Supervisor reviews the report.
+
+Clicks an "Apply Signature" button.
+
+A dialog prompts for their username and password again.
+
+Upon successful authentication, the report is marked as "Signed" and the PDF is updated with the signer's name, date, and time. The signed report becomes immutable.
+
+Database Tables: Reports, ElectronicSignatures.
+
+4. Development Phases
+
+Phase 1: Foundation & Security
+
+Set up the WPF project and solution structure.
+
+Design the database schema and implement it using EF Core migrations.
+
+Build the User Login, Management, and Audit Trail modules. This is the bedrock of your compliance.
+
+Phase 2: Image Processing Proof-of-Concept
+
+Isolate this task. Create a small test application to perfect the zone detection algorithm using OpenCVSharp. Test with dozens of real-world scan images to make it robust.
+
+Phase 3: Core Assay Workflow
+
+Integrate the validated image processing code into the main application.
+
+Build the UI for Assay Management, scanning, and displaying zone measurements.
+
+Implement the manual override functionality.
+
+Phase 4: Calculations & Reporting
+
+Develop and rigorously test the USP-81 calculation engine. Use textbook examples to validate its output.
+
+Build the PDF report generation module.
+
+Implement the electronic signature workflow.
+
+Phase 5: Integration, Testing & Validation
+
+Thoroughly test the entire workflow from start to finish.
+
+Prepare validation documentation (this is a critical step for regulated environments).
+
+This structured plan provides a clear path forward for developing a high-quality, compliant zonereader application.
