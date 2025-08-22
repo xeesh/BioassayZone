@@ -142,9 +142,9 @@
                                         </div>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                                        <li><a class="dropdown-item" href="/auth/change_password"><i class="fas fa-key me-2"></i>Change Password</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                        <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -342,7 +342,7 @@
                                     <div class="text-center text-muted py-4">
                                         <i class="fas fa-file-pdf fa-3x mb-3 opacity-50"></i>
                                         <p>No reports generated yet. Start by completing some assays and generating individual reports.</p>
-                                        <a href="{{ url_for('zone_analysis') }}" class="btn btn-primary">
+                                        <a href="/zone_analysis" class="btn btn-primary">
                                             <i class="fas fa-plus me-2"></i>Start New Analysis
                                         </a>
                                     </div>

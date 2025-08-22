@@ -135,9 +135,9 @@
                                         </div>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                                        <li><a class="dropdown-item" href="/auth/change_password"><i class="fas fa-key me-2"></i>Change Password</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                        <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -290,7 +290,7 @@
                                     <p>Last integrity check: <strong>{{ current_user.last_login.strftime('%Y-%m-%d %H:%M') if current_user.last_login else 'N/A' }}</strong></p>
                                     <p>Active electronic signatures: <strong>5 in last 30 days</strong></p>
                                     
-                                    <a href="{{ url_for('admin_audit_log') }}" class="btn btn-outline-info">
+                                    <a href="/audit_log" class="btn btn-outline-info">
                                         <i class="fas fa-eye me-2"></i>View Full Audit Log
                                     </a>
                                 </div>
