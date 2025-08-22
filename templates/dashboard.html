@@ -244,9 +244,9 @@
                                         </div>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                                        <li><a class="dropdown-item" href="/auth/change_password"><i class="fas fa-key me-2"></i>Change Password</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                        <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -334,7 +334,7 @@
                                                 <span class="badge bg-{{ 'success' if assay.approved else 'warning' if assay.status == 'active' else 'info' }}">
                                                     {{ 'Completed' if assay.approved else 'In Progress' if assay.status == 'active' else 'Pending Review' }}
                                                 </span>
-                                                <a href="{{ url_for('view_assay', assay_id=assay.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                                <a href="/view_assay/{{ assay.id }}" class="btn btn-sm btn-outline-primary ms-2">
                                                     View Details
                                                 </a>
                                             </div>

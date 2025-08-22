@@ -24,8 +24,8 @@
                     <ul class="dropdown-menu">
                         <li><span class="dropdown-item-text"><strong>{{ user.username }}</strong><br><small>{{ user.role|title }}</small></span></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="fas fa-key me-2"></i>Change Password</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item" href="/auth/change_password"><i class="fas fa-key me-2"></i>Change Password</a></li>
+                        <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
