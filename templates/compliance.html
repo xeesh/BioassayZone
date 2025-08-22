@@ -87,23 +87,23 @@
                     </div>
                     
                     <nav class="nav flex-column">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                        <a class="nav-link" href="/">
                             <i class="fas fa-tachometer-alt"></i>Dashboard
                         </a>
-                        <a class="nav-link" href="{{ url_for('zone_analysis') }}">
+                        <a class="nav-link" href="/zone_analysis">
                             <i class="fas fa-search"></i>Zone Analysis
                         </a>
-                        <a class="nav-link" href="{{ url_for('my_assays') }}">
+                        <a class="nav-link" href="/my_assays">
                             <i class="fas fa-flask"></i>Assay Management
                         </a>
-                        <a class="nav-link active" href="{{ url_for('compliance') }}">
+                        <a class="nav-link active" href="/compliance">
                             <i class="fas fa-shield-alt"></i>Compliance
                         </a>
-                        <a class="nav-link" href="{{ url_for('reports') }}">
+                        <a class="nav-link" href="/reports">
                             <i class="fas fa-chart-bar"></i>Reports
                         </a>
                         {% if user.has_permission('manage_users') %}
-                        <a class="nav-link" href="{{ url_for('manage_users') }}">
+                        <a class="nav-link" href="/manage_users">
                             <i class="fas fa-users"></i>User Management
                         </a>
                         {% endif %}
