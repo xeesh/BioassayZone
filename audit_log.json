@@ -1,1 +1,64 @@
-[]
+[
+  {
+    "timestamp": "2025-08-22T15:57:35.431423",
+    "user": "testss",
+    "action": "IMAGE_UPLOAD",
+    "description": "Uploaded image for assay 'test'",
+    "metadata": {
+      "filename": "zonepetri.JPG",
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba"
+    }
+  },
+  {
+    "timestamp": "2025-08-22T15:57:44.618509",
+    "user": "testss",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-22T15:57:56.051090",
+    "user": "testss",
+    "action": "MANUAL_ZONE_ADD",
+    "description": "Manual zone added",
+    "metadata": {
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
+      "zone_id": "df979abc-ead6-4c6c-98d0-a73fe36d8866",
+      "diameter_mm": 15
+    }
+  },
+  {
+    "timestamp": "2025-08-22T15:58:01.192056",
+    "user": "testss",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-22T15:58:26.728968",
+    "user": "testss",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-22T15:58:33.542847",
+    "user": "testss",
+    "action": "REPORT_GENERATED",
+    "description": "PDF report generated",
+    "metadata": {
+      "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
+      "report_file": "bioassay_report_5df14816-661b-4928-a8a4-719df66ddeba.pdf"
+    }
+  }
+]

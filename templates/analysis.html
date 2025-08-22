@@ -17,9 +17,21 @@
                 <small>{{ assay.assay_name }} - {{ assay.analyst_name }}</small>
             </div>
             <div class="col-auto">
-                <a href="/" class="btn btn-light btn-sm">
-                    <i class="fas fa-home me-1"></i>New Analysis
-                </a>
+                <div class="btn-group">
+                    <a href="/" class="btn btn-light btn-sm">
+                        <i class="fas fa-home me-1"></i>New Analysis
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ user.username }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><span class="dropdown-item-text"><strong>{{ user.username }}</strong><br><small>{{ user.role|title }}</small></span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -39,6 +51,11 @@
                             <button type="button" class="btn btn-info btn-sm" id="clearZonesBtn">
                                 <i class="fas fa-eraser me-1"></i>Clear All
                             </button>
+                            {% if user.has_permission('electronic_sign') %}
+                            <button type="button" class="btn btn-primary btn-sm" id="signReportBtn" disabled>
+                                <i class="fas fa-digital-tachograph me-1"></i>Sign Report
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="card-body p-2">

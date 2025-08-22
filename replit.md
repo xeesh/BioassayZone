@@ -1,12 +1,21 @@
-# Bioassay Zone Measurement Tool
+# Bioassay Zone Measurement Tool - USP-81 / 21 CFR Part 11 Compliant
 
 ## Overview
 
-This is a web-based bioassay zone measurement application built with Flask that provides automated detection and manual measurement of inhibition zones in Petri dish images. The system is designed for pharmaceutical and microbiological laboratories to analyze microbial assays with proper audit logging and reporting capabilities. The application processes uploaded microscopy images using computer vision techniques to detect circular inhibition zones and generates comprehensive PDF reports for regulatory compliance.
+This is a comprehensive web-based bioassay zone measurement application built with Flask that provides automated detection and manual measurement of inhibition zones in Petri dish images. The system is designed specifically for pharmaceutical and microbiological laboratories to analyze microbial assays with full USP-81 and 21 CFR Part 11 compliance. The application processes uploaded microscopy images using advanced computer vision techniques to detect circular inhibition zones, performs statistical analysis according to USP guidelines, and generates comprehensive PDF reports for regulatory compliance.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+- **✅ Database Integration**: Implemented full PostgreSQL database with user management, assay tracking, and audit logs
+- **✅ User Authentication**: Added secure login system with role-based access control (Analyst, Supervisor, Administrator)
+- **✅ Electronic Signatures**: Implemented 21 CFR Part 11 compliant electronic signature workflow
+- **✅ Enhanced Audit Logging**: Tamper-proof audit trail with integrity checking and secure logging
+- **✅ USP-81 Statistical Calculations**: Added ANOVA, parallel line assay analysis, and potency calculations
+- **✅ Password Security**: Enforced strong password policies with history tracking and expiration
 
 ## System Architecture
 
@@ -14,13 +23,30 @@ Preferred communication style: Simple, everyday language.
 - **Template Engine**: Jinja2 templates with Bootstrap 5 for responsive UI
 - **JavaScript Framework**: Vanilla JavaScript with Canvas API for image manipulation
 - **UI Components**: Interactive canvas for zone detection, measurement tools, and real-time analysis
+- **Authentication UI**: Professional login/register pages with security features
 - **Styling**: Custom CSS with Bootstrap integration for professional laboratory interface
 
 ### Backend Architecture
-- **Web Framework**: Flask with session management for user state
+- **Web Framework**: Flask with Flask-Login for user session management
+- **Database ORM**: SQLAlchemy with Flask-SQLAlchemy for database operations
 - **Request Handling**: RESTful API endpoints for file upload, image processing, and report generation
 - **File Management**: Secure file upload with validation and unique filename generation
-- **Session Management**: Flask sessions with configurable secret key for user state persistence
+- **Session Management**: Flask sessions with secure secret key management
+
+### Authentication and Security
+- **User Management**: Role-based access control with three levels (Analyst, Supervisor, Administrator)
+- **Password Security**: BCrypt hashing with password history tracking and strength validation
+- **Account Protection**: Failed login attempt limiting with temporary account lockouts
+- **Session Security**: Secure session management with CSRF protection capabilities
+- **Electronic Signatures**: Cryptographic signature implementation with integrity verification
+
+### Database Architecture
+- **Primary Database**: PostgreSQL with environment-based configuration
+- **User Model**: Complete user management with role-based permissions and security tracking
+- **Assay Model**: Full assay lifecycle tracking with analyst assignment and approval workflow
+- **Zone Measurements**: Individual zone data storage with automated and manual detection tracking
+- **Audit Logging**: Comprehensive audit trail with tamper-proof integrity checking
+- **Electronic Signatures**: Legal compliance tracking for document approval workflow
 
 ### Image Processing Pipeline
 - **Computer Vision**: OpenCV (cv2) for automated zone detection using HoughCircles algorithm
@@ -28,34 +54,40 @@ Preferred communication style: Simple, everyday language.
 - **Measurement Calculation**: Pixel-to-millimeter conversion with configurable DPI settings
 - **Manual Override**: Interactive canvas tools for manual zone marking and adjustment
 
-### Data Storage Solutions
-- **File Storage**: Local filesystem with organized directory structure (uploads/, reports/)
-- **Audit Logging**: JSON-based audit trail system with timestamped entries
-- **Session Data**: Server-side session storage for user workflow state
-- **Report Storage**: Generated PDF reports stored locally with unique identifiers
-
-### Authentication and Authorization
-- **Current State**: Basic session-based state management without user authentication
-- **Audit Trail**: User identification through manual entry rather than authenticated sessions
-- **Access Control**: No role-based permissions currently implemented
-- **Session Security**: Configurable secret key for session encryption
+### Statistical Analysis (USP-81 Compliant)
+- **Basic Statistics**: Mean, median, standard deviation, coefficient of variation
+- **Outlier Detection**: Modified Z-score based outlier identification
+- **Parallel Line Assay**: 2+2 and 3+3 design analysis with ANOVA calculations
+- **Potency Estimation**: Log-scale potency calculations with confidence intervals
+- **Validity Tests**: Linearity, parallelism, and significance testing
+- **Quality Assessment**: Precision grading based on CV% thresholds
 
 ### Report Generation System
 - **PDF Engine**: ReportLab for professional laboratory report generation
 - **Report Templates**: Structured PDF layouts with company branding and compliance sections
 - **Data Visualization**: Tables, charts, and embedded images in reports
-- **Export Formats**: PDF output with print-optimized layouts
+- **Audit Integration**: Complete audit trail inclusion in reports
+- **Electronic Signature Support**: Signature verification and legal compliance documentation
 
 ## External Dependencies
 
 ### Core Web Framework
 - **Flask**: Python web framework for request handling and routing
-- **Jinja2**: Template engine for HTML rendering (included with Flask)
-- **Werkzeug**: WSGI utilities for secure file handling (included with Flask)
+- **Flask-Login**: User session management and authentication
+- **Flask-SQLAlchemy**: Database ORM integration
+- **Flask-WTF**: Form handling and CSRF protection capabilities
+- **Werkzeug**: Security utilities including password hashing
 
-### Image Processing Libraries
+### Database and Security
+- **PostgreSQL**: Production database with ACID compliance
+- **psycopg2-binary**: PostgreSQL adapter for Python
+- **SQLAlchemy**: Advanced ORM with relationship management
+- **BCrypt**: Secure password hashing and verification
+
+### Scientific Computing
+- **NumPy**: Numerical computing for statistical calculations and image array manipulation
+- **SciPy**: Advanced statistical functions including ANOVA and regression analysis
 - **OpenCV (cv2)**: Computer vision library for automated zone detection
-- **NumPy**: Numerical computing for image array manipulation
 - **PIL/Pillow**: Image loading and basic processing capabilities
 
 ### Report Generation
@@ -68,13 +100,21 @@ Preferred communication style: Simple, everyday language.
 - **Font Awesome 6**: Icon library for user interface elements
 - **JavaScript Canvas API**: Native browser API for image manipulation
 
-### Development and Deployment
-- **Python 3.x**: Runtime environment
-- **Environment Variables**: Configuration management for sensitive settings
-- **File System**: Local storage for uploads, reports, and audit logs
+## Project Architecture
 
-### Missing Integration Opportunities
-- **Database**: Currently using JSON files; could integrate PostgreSQL for scalable data storage
-- **Authentication Service**: Could integrate OAuth2 or LDAP for user management
-- **Cloud Storage**: Could integrate AWS S3 or similar for file storage
-- **Scanner Integration**: Could add TWAIN/WIA libraries for direct scanner connectivity
+### User Roles and Permissions
+- **Analyst**: Can create assays, perform analysis, and view their own reports
+- **Supervisor**: Can approve reports, apply electronic signatures, and view all assays
+- **Administrator**: Full system access including user management and audit log access
+
+### Compliance Features
+- **21 CFR Part 11**: Electronic signature workflow with password confirmation and audit trails
+- **USP-81**: Statistical analysis methods for bioassay validation and potency calculation
+- **Data Integrity**: Tamper-proof audit logging with cryptographic integrity verification
+- **User Authentication**: Secure login with role-based access control and password policies
+
+### Security Implementation
+- **Password Policies**: Minimum 8 characters with complexity requirements and history tracking
+- **Account Lockout**: Automatic lockout after 5 failed attempts with 30-minute timeout
+- **Audit Trail**: Complete activity logging with IP address and timestamp tracking
+- **Electronic Signatures**: Cryptographically secured signatures with verification capabilities
