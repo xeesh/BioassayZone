@@ -60,5 +60,37 @@
       "assay_id": "5df14816-661b-4928-a8a4-719df66ddeba",
       "report_file": "bioassay_report_5df14816-661b-4928-a8a4-719df66ddeba.pdf"
     }
+  },
+  {
+    "timestamp": "2025-08-22T16:13:46.313988",
+    "user": "xeesh",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "d927cddf-fb24-4109-aa9b-7a1e2cb6f921",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-22T16:13:50.215724",
+    "user": "xeesh",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "d927cddf-fb24-4109-aa9b-7a1e2cb6f921",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-22T16:13:50.345711",
+    "user": "xeesh",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "d927cddf-fb24-4109-aa9b-7a1e2cb6f921",
+      "zone_count": 6,
+      "mean": 7.563
+    }
   }
 ]

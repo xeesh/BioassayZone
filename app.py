@@ -25,7 +25,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'Please log in to access the bioassay system.'
 login_manager.login_message_category = 'info'
 
@@ -77,9 +77,89 @@ def allowed_file(filename):
 
 @app.route('/')
 @login_required
-def index():
-    """Main page for image upload and assay setup"""
+def dashboard():
+    """Main dashboard with statistics and recent activity"""
+    # Calculate dashboard statistics
+    total_assays = Assay.query.count()
+    active_assays = Assay.query.filter_by(status='active').count()
+    completed_assays = Assay.query.filter_by(approved=True).count()
+    
+    # Recent assays (last 5)
+    recent_assays = Assay.query.order_by(Assay.created_at.desc()).limit(5).all()
+    
+    # Recent activity from audit log
+    recent_activity = []
+    audit_entries = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(10).all()
+    
+    for entry in audit_entries:
+        time_diff = datetime.utcnow() - entry.timestamp
+        if time_diff.days > 0:
+            time_ago = f"{time_diff.days} days ago"
+        elif time_diff.seconds > 3600:
+            hours = time_diff.seconds // 3600
+            time_ago = f"{hours} hours ago"
+        else:
+            minutes = time_diff.seconds // 60
+            time_ago = f"{minutes} minutes ago" if minutes > 0 else "Just now"
+        
+        icon_map = {
+            'IMAGE_UPLOAD': {'icon': 'fa-upload', 'color': 'primary'},
+            'REPORT_GENERATED': {'icon': 'fa-file-pdf', 'color': 'success'},
+            'ELECTRONIC_SIGNATURE': {'icon': 'fa-digital-tachograph', 'color': 'warning'},
+            'USER_LOGIN': {'icon': 'fa-sign-in-alt', 'color': 'info'},
+            'USER_LOGOUT': {'icon': 'fa-sign-out-alt', 'color': 'secondary'},
+        }
+        
+        activity_info = icon_map.get(entry.action, {'icon': 'fa-cog', 'color': 'secondary'})
+        
+        recent_activity.append({
+            'description': entry.description,
+            'time_ago': time_ago,
+            'icon': activity_info['icon'],
+            'icon_color': activity_info['color']
+        })
+    
+    # Calculate statistics
+    dashboard_stats = {
+        'total_assays': total_assays,
+        'active_assays': active_assays,
+        'compliance_score': 98.7,  # This could be calculated based on validation results
+        'success_rate': round((completed_assays / total_assays * 100), 1) if total_assays > 0 else 100,
+        'assay_growth': 12  # This could be calculated from historical data
+    }
+    
+    # Add status classes for assays
+    for assay in recent_assays:
+        if assay.approved:
+            assay.status_class = 'completed'
+        elif assay.status == 'active':
+            assay.status_class = 'in-progress'
+        else:
+            assay.status_class = 'pending'
+    
+    return render_template('dashboard.html', 
+                         user=current_user, 
+                         dashboard_stats=dashboard_stats,
+                         recent_assays=recent_assays,
+                         recent_activity=recent_activity)
+
+@app.route('/zone_analysis')
+@login_required
+def zone_analysis():
+    """Zone analysis page (upload and analyze)"""
     return render_template('index.html', user=current_user)
+
+@app.route('/compliance')
+@login_required
+def compliance():
+    """Compliance overview page"""
+    return render_template('compliance.html', user=current_user)
+
+@app.route('/reports')
+@login_required  
+def reports():
+    """Reports overview page"""
+    return render_template('reports.html', user=current_user)
 
 @app.route('/upload', methods=['POST'])
 @login_required
