@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioassay Zone Measurement Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <header class="row bg-primary text-white py-3 mb-4">
+            <div class="col">
+                <h1 class="mb-0"><i class="fas fa-microscope me-2"></i>Bioassay Zone Measurement Tool</h1>
+                <p class="mb-0 opacity-75">Simplified zone detection and analysis system</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="row">
+            <div class="col-md-8 mx-auto">
+                <!-- Alert Messages -->
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <!-- Welcome Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h3 class="card-title mb-0"><i class="fas fa-upload me-2"></i>Start New Analysis</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Upload an image of a Petri dish to begin zone measurement and analysis. 
+                            The system will automatically detect circular inhibition zones and provide measurement tools.
+                        </p>
+                        
+                        <!-- Upload Form -->
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="row g-3">
+                                <!-- Assay Information -->
+                                <div class="col-md-6">
+                                    <label for="assay_name" class="form-label">Assay Name *</label>
+                                    <input type="text" class="form-control" id="assay_name" name="assay_name" 
+                                           placeholder="e.g., Penicillin Potency Test" required>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="analyst_name" class="form-label">Analyst Name *</label>
+                                    <input type="text" class="form-control" id="analyst_name" name="analyst_name" 
+                                           placeholder="Your name" required>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="sample_type" class="form-label">Sample Type</label>
+                                    <select class="form-select" id="sample_type" name="sample_type">
+                                        <option value="Standard">Standard</option>
+                                        <option value="Test Sample">Test Sample</option>
+                                        <option value="Control">Control</option>
+                                        <option value="Reference">Reference</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- File Upload -->
+                                <div class="col-12">
+                                    <label for="image_file" class="form-label">Petri Dish Image *</label>
+                                    <input type="file" class="form-control" id="image_file" name="file" 
+                                           accept="image/*,.tiff,.tif" required>
+                                    <div class="form-text">
+                                        Supported formats: PNG, JPG, JPEG, TIFF, BMP. Maximum size: 10MB
+                                    </div>
+                                </div>
+
+                                <!-- Upload Button -->
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                        <i class="fas fa-cloud-upload-alt me-2"></i>Upload and Analyze
+                                    </button>
+                                    <div class="mt-2">
+                                        <div class="progress d-none" id="uploadProgress">
+                                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Features Overview -->
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-search-plus fa-2x text-primary"></i>
+                                </div>
+                                <h5 class="card-title">Automatic Detection</h5>
+                                <p class="card-text">Advanced OpenCV algorithms automatically detect circular inhibition zones in uploaded images.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-edit fa-2x text-success"></i>
+                                </div>
+                                <h5 class="card-title">Manual Tools</h5>
+                                <p class="card-text">Interactive tools for manual zone adjustment and measurement when automatic detection needs refinement.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-chart-bar fa-2x text-info"></i>
+                                </div>
+                                <h5 class="card-title">Statistical Analysis</h5>
+                                <p class="card-text">Comprehensive statistical analysis including mean, standard deviation, and coefficient of variation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compliance Note -->
+                <div class="alert alert-info mt-4" role="alert">
+                    <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Compliance Note</h5>
+                    <p class="mb-0">
+                        This is a simplified demonstration tool showcasing core bioassay zone measurement concepts. 
+                        For full pharmaceutical compliance (USP-81, 21 CFR Part 11), additional security, validation, 
+                        and audit features would be required.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

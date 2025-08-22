@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioassay Report - {{ report_data.assay.assay_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+            body { background-color: white !important; }
+            .container-fluid { padding: 0 !important; }
+        }
+        
+        .report-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+        
+        .report-section {
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .zone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .zone-card {
+            border: 1px solid #dee2e6;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            background: white;
+        }
+        
+        .audit-entry {
+            border-left: 3px solid #17a2b8;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(23, 162, 184, 0.05);
+        }
+        
+        .report-footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid #dee2e6;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-microscope me-2"></i>Bioassay Tool
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="/analysis">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Analysis
+                    </a>
+                    <button class="btn btn-light btn-sm ms-2" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i>Print Report
+                    </button>
+                    {% if report_url %}
+                    <a class="btn btn-success btn-sm ms-2" href="{{ report_url }}" target="_blank">
+                        <i class="fas fa-download me-1"></i>Download PDF
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <!-- Report Header -->
+        <div class="report-header">
+            <div class="row">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-file-alt me-3"></i>
+                        Bioassay Zone Measurement Report
+                    </h1>
+                    <h3 class="mb-0 opacity-75">{{ report_data.assay.assay_name }}</h3>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="mt-3">
+                        <div><strong>Report ID:</strong> {{ report_data.assay.id }}</div>
+                        <div><strong>Generated:</strong> {{ current_datetime }}</div>
+                        <div><strong>Status:</strong> <span class="badge bg-light text-dark">Completed</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Report Content -->
+            <div class="col-lg-8">
+                <!-- Assay Information Section -->
+                <div class="report-section">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Assay Information</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th width="40%">Assay Name:</th>
+                                            <td>{{ report_data.assay.assay_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Analyst:</th>
+                                            <td>{{ report_data.assay.analyst_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Sample Type:</th>
+                                            <td>{{ report_data.assay.sample_type }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th width="40%">Analysis Date:</th>
+                                            <td>{{ report_data.assay.timestamp[:10] }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Image File:</th>
+                                            <td>{{ report_data.assay.filename }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Total Zones:</th>
+                                            <td><strong class="text-primary">{{ report_data.zones|length }}</strong></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone Measurements Section -->
+                <div class="report-section">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="fas fa-bullseye me-2"></i>Zone Measurements</h4>
+                        </div>
+                        <div class="card-body">
+                            {% if report_data.zones %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Zone ID</th>
+                                                <th>Detection Type</th>
+                                                <th>X Position</th>
+                                                <th>Y Position</th>
+                                                <th>Diameter (mm)</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for zone in report_data.zones %}
+                                            <tr>
+                                                <td><strong>{{ loop.index }}</strong></td>
+                                                <td><code>{{ zone.id }}</code></td>
+                                                <td>
+                                                    <span class="badge bg-{{ 'success' if zone.type == 'automatic' else 'warning' }}">
+                                                        {{ zone.type|title }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ zone.x|round }}</td>
+                                                <td>{{ zone.y|round }}</td>
+                                                <td><strong>{{ zone.diameter_mm }}</strong></td>
+                                                <td>
+                                                    {% if zone.confidence %}
+                                                        {{ (zone.confidence * 100)|round }}%
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Zone Grid View -->
+                                <div class="zone-grid mt-4">
+                                    {% for zone in report_data.zones %}
+                                    <div class="zone-card">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">Zone {{ loop.index }}</h6>
+                                            <span class="badge bg-{{ 'success' if zone.type == 'automatic' else 'warning' }}">
+                                                {{ zone.type|title }}
+                                            </span>
+                                        </div>
+                                        <div class="small">
+                                            <div><strong>Diameter:</strong> {{ zone.diameter_mm }} mm</div>
+                                            <div><strong>Position:</strong> ({{ zone.x|round }}, {{ zone.y|round }})</div>
+                                            {% if zone.confidence %}
+                                            <div><strong>Confidence:</strong> {{ (zone.confidence * 100)|round }}%</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    No zone measurements were recorded for this assay.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistical Analysis Section -->
+                <div class="report-section">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistical Analysis</h4>
+                        </div>
+                        <div class="card-body">
+                            {% if report_data.statistics %}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="stat-card">
+                                            <h5 class="text-primary">Descriptive Statistics</h5>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <th>Number of Zones:</th>
+                                                    <td><strong>{{ report_data.statistics.count }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Mean Diameter:</th>
+                                                    <td><strong>{{ report_data.statistics.mean }} mm</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Median Diameter:</th>
+                                                    <td><strong>{{ report_data.statistics.median }} mm</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Standard Deviation:</th>
+                                                    <td><strong>{{ report_data.statistics.std_dev }} mm</strong></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="stat-card">
+                                            <h5 class="text-primary">Range & Variability</h5>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <th>Minimum Diameter:</th>
+                                                    <td><strong>{{ report_data.statistics.min }} mm</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Maximum Diameter:</th>
+                                                    <td><strong>{{ report_data.statistics.max }} mm</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Range:</th>
+                                                    <td><strong>{{ report_data.statistics.range }} mm</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>CV (%):</th>
+                                                    <td><strong>{{ report_data.statistics.cv_percent }}%</strong></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Statistical Interpretation -->
+                                <div class="alert alert-info mt-3">
+                                    <h6><i class="fas fa-lightbulb me-2"></i>Statistical Interpretation</h6>
+                                    <p class="mb-2">
+                                        <strong>Coefficient of Variation (CV):</strong> 
+                                        {% set cv = report_data.statistics.cv_percent %}
+                                        {% if cv < 5 %}
+                                            <span class="text-success">{{ cv }}% - Excellent precision</span>
+                                        {% elif cv < 10 %}
+                                            <span class="text-info">{{ cv }}% - Good precision</span>
+                                        {% elif cv < 15 %}
+                                            <span class="text-warning">{{ cv }}% - Acceptable precision</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ cv }}% - High variability, review methodology</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Data Quality:</strong> Based on {{ report_data.statistics.count }} measurements with a range of {{ report_data.statistics.range }} mm.
+                                    </p>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    No statistical analysis was performed for this assay.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Stats -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Quick Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if report_data.statistics %}
+                            <div class="row text-center">
+                                <div class="col-6 border-end">
+                                    <h3 class="text-primary mb-0">{{ report_data.statistics.count }}</h3>
+                                    <small class="text-muted">Total Zones</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success mb-0">{{ report_data.statistics.mean }}</h3>
+                                    <small class="text-muted">Mean (mm)</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row text-center">
+                                <div class="col-6 border-end">
+                                    <h4 class="text-info mb-0">{{ report_data.statistics.std_dev }}</h4>
+                                    <small class="text-muted">Std Dev (mm)</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-warning mb-0">{{ report_data.statistics.cv_percent }}%</h4>
+                                    <small class="text-muted">CV</small>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-muted text-center py-3">
+                                <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                <div>No statistics available</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Audit Trail Summary -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Audit Trail</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if report_data.audit_trail %}
+                            <div class="audit-entries" style="max-height: 300px; overflow-y: auto;">
+                                {% for entry in report_data.audit_trail %}
+                                <div class="audit-entry">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong class="text-info">{{ entry.action }}</strong>
+                                            <div class="small">{{ entry.description }}</div>
+                                        </div>
+                                        <small class="text-muted">{{ entry.timestamp[:16] }}</small>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        <i class="fas fa-user me-1"></i>{{ entry.user }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted text-center py-3">
+                                <i class="fas fa-history fa-2x mb-2"></i>
+                                <div>No audit entries</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Report Actions -->
+                <div class="card no-print">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Report Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="window.print()">
+                                <i class="fas fa-print me-2"></i>Print Report
+                            </button>
+                            {% if report_url %}
+                            <a class="btn btn-success" href="{{ report_url }}" target="_blank">
+                                <i class="fas fa-download me-2"></i>Download PDF
+                            </a>
+                            {% endif %}
+                            <a class="btn btn-info" href="/analysis">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Analysis
+                            </a>
+                            <a class="btn btn-secondary" href="/">
+                                <i class="fas fa-home me-2"></i>New Analysis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Footer -->
+        <div class="report-footer text-center">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>System Information</h6>
+                    <p class="small">Bioassay Zone Measurement Tool<br>Version 1.0</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Compliance Note</h6>
+                    <p class="small">This is a simplified demonstration tool.<br>Not suitable for regulated environments.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Generated</h6>
+                    <p class="small">{{ current_datetime }}<br>Report ID: {{ report_data.assay.id }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-focus on print dialog for better UX
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+        
+        // Enhanced print functionality
+        function enhancedPrint() {
+            // Hide all non-essential elements
+            const nonPrintElements = document.querySelectorAll('.no-print');
+            nonPrintElements.forEach(el => el.style.display = 'none');
+            
+            // Print the page
+            window.print();
+            
+            // Restore elements after printing
+            setTimeout(() => {
+                nonPrintElements.forEach(el => el.style.display = '');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
