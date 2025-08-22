@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Bioassay Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+        .register-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        .register-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .register-body {
+            padding: 2rem;
+        }
+        .password-strength {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .strength-bar {
+            height: 5px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .strength-bar .strength-fill {
+            height: 100%;
+            transition: width 0.3s, background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="register-card">
+                    <div class="register-header">
+                        <h2 class="mb-2">
+                            <i class="fas fa-user-plus fa-2x mb-3 d-block"></i>
+                            Create Account
+                        </h2>
+                        <p class="mb-0">Join the Bioassay Analysis System</p>
+                    </div>
+                    
+                    <div class="register-body">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' }} me-2"></i>
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" id="registerForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="username" name="username" required 
+                                               maxlength="80" pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores allowed">
+                                    </div>
+                                    <small class="form-text text-muted">3-80 characters, letters, numbers, and underscores only</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" class="form-control" id="email" name="email" required maxlength="120">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Role *</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="analyst">Analyst - Can create assays and perform analysis</option>
+                                    <option value="supervisor">Supervisor - Can approve reports and sign electronically</option>
+                                    <option value="administrator">Administrator - Full system access</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" required
+                                           minlength="8" autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Password Strength Indicator -->
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strengthFill"></div>
+                                </div>
+                                
+                                <div class="password-strength" id="passwordHelp">
+                                    <strong>Password Requirements:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li id="length">At least 8 characters</li>
+                                        <li id="uppercase">One uppercase letter</li>
+                                        <li id="lowercase">One lowercase letter</li>
+                                        <li id="number">One number</li>
+                                        <li id="special">One special character</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="confirmPassword" class="form-label">Confirm Password *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+                                </div>
+                                <div id="passwordMatch" class="form-text"></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="termsAccepted" required>
+                                    <label class="form-check-label" for="termsAccepted">
+                                        I acknowledge that this system maintains audit logs and complies with regulatory requirements *
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success btn-lg w-100 mb-3" id="submitBtn" disabled>
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </form>
+                        
+                        <div class="text-center">
+                            <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
+                                <i class="fas fa-sign-in-alt me-1"></i>Already have an account? Sign in
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Password strength checker
+        function checkPasswordStrength(password) {
+            let score = 0;
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+            
+            Object.values(requirements).forEach(met => met && score++);
+            
+            // Update requirement indicators
+            Object.keys(requirements).forEach(req => {
+                const element = document.getElementById(req);
+                if (requirements[req]) {
+                    element.classList.add('text-success');
+                    element.classList.remove('text-danger');
+                } else {
+                    element.classList.add('text-danger');
+                    element.classList.remove('text-success');
+                }
+            });
+            
+            // Update strength bar
+            const strengthFill = document.getElementById('strengthFill');
+            const colors = ['#dc3545', '#fd7e14', '#ffc107', '#28a745', '#198754'];
+            const widths = ['20%', '40%', '60%', '80%', '100%'];
+            
+            strengthFill.style.width = widths[score - 1] || '0%';
+            strengthFill.style.backgroundColor = colors[score - 1] || '#e9ecef';
+            
+            return score >= 5;
+        }
+
+        // Password toggle
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        // Real-time validation
+        document.getElementById('password').addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            validateForm();
+        });
+
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const matchDiv = document.getElementById('passwordMatch');
+            
+            if (this.value === password && this.value.length > 0) {
+                matchDiv.textContent = '✓ Passwords match';
+                matchDiv.className = 'form-text text-success';
+            } else if (this.value.length > 0) {
+                matchDiv.textContent = '✗ Passwords do not match';
+                matchDiv.className = 'form-text text-danger';
+            } else {
+                matchDiv.textContent = '';
+            }
+            validateForm();
+        });
+
+        document.getElementById('termsAccepted').addEventListener('change', validateForm);
+
+        function validateForm() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const termsAccepted = document.getElementById('termsAccepted').checked;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            const isValid = checkPasswordStrength(password) && 
+                           password === confirmPassword && 
+                           confirmPassword.length > 0 && 
+                           termsAccepted;
+            
+            submitBtn.disabled = !isValid;
+        }
+
+        // Form submission validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!checkPasswordStrength(password)) {
+                e.preventDefault();
+                alert('Please ensure your password meets all security requirements.');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match.');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

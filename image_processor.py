@@ -98,7 +98,7 @@ class ImageProcessor:
         try:
             # Create a mask for the circular region
             mask = np.zeros(gray_image.shape, dtype=np.uint8)
-            cv2.circle(mask, (x, y), radius, 255, 2)
+            cv2.circle(mask, (x, y), radius, (255,), 2)
             
             # Apply Sobel edge detection
             sobelx = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
@@ -109,7 +109,7 @@ class ImageProcessor:
             edge_values = edge_magnitude[mask == 255]
             if len(edge_values) > 0:
                 confidence = np.mean(edge_values) / 255.0
-                return min(1.0, confidence)
+                return min(1.0, float(confidence))
             else:
                 return 0.0
                 
@@ -129,16 +129,16 @@ class ImageProcessor:
         if not diameters:
             return {}
         
-        diameters = np.array(diameters)
+        diameters_array = np.array(diameters, dtype=float)
         
         stats = {
             'count': len(diameters),
-            'mean': float(np.mean(diameters)),
-            'median': float(np.median(diameters)),
-            'std_dev': float(np.std(diameters, ddof=1)) if len(diameters) > 1 else 0.0,
-            'min': float(np.min(diameters)),
-            'max': float(np.max(diameters)),
-            'range': float(np.max(diameters) - np.min(diameters))
+            'mean': float(np.mean(diameters_array)),
+            'median': float(np.median(diameters_array)),
+            'std_dev': float(np.std(diameters_array, ddof=1)) if len(diameters) > 1 else 0.0,
+            'min': float(np.min(diameters_array)),
+            'max': float(np.max(diameters_array)),
+            'range': float(np.max(diameters_array) - np.min(diameters_array))
         }
         
         # Calculate coefficient of variation (CV%)
