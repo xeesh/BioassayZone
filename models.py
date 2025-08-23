@@ -130,6 +130,7 @@ class ZoneMeasurement(db.Model):
     y_position: Mapped[float] = mapped_column(Float, nullable=False)
     radius_pixels: Mapped[float] = mapped_column(Float, nullable=False)
     diameter_mm: Mapped[float] = mapped_column(Float, nullable=False)
+    concentration: Mapped[Optional[float]] = mapped_column(Float, nullable=True) # USP-81: Concentration value
     detection_type: Mapped[str] = mapped_column(String(20), nullable=False)  # automatic, manual
     confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # For automatic detection
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

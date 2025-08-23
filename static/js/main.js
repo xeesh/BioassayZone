@@ -467,6 +467,16 @@ class BioassayTool {
             this.showError('No zones to analyze');
             return;
         }
+
+        // Collect concentration data from the UI
+        const concentrationInputs = document.querySelectorAll('.zone-concentration-input');
+        const zonesWithConcentration = this.zones.map((zone, index) => {
+            const input = concentrationInputs[index];
+            const concentration = parseFloat(input.value);
+            // Update the zone object in the main state
+            zone.concentration = isNaN(concentration) ? null : concentration;
+            return zone;
+        });
         
         try {
             const response = await fetch('/calculate_statistics', {
@@ -475,7 +485,7 @@ class BioassayTool {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    zones: this.zones
+                    zones: zonesWithConcentration
                 })
             });
             
@@ -483,7 +493,10 @@ class BioassayTool {
             
             if (result.success) {
                 this.displayStatistics(result.statistics);
-                this.showSuccess('Statistics calculated successfully');
+                if (result.usp81_validation) {
+                    this.displayUsp81Validation(result.usp81_validation);
+                }
+                this.showSuccess('Statistics and validation complete');
             } else {
                 this.showError(result.error || 'Statistics calculation failed');
             }
@@ -573,6 +586,10 @@ class BioassayTool {
                             Position: (${Math.round(zone.x)}, ${Math.round(zone.y)})<br>
                             Diameter: ${zone.diameter_mm} mm
                         </div>
+                        <div class="small mt-2">
+                            <label for="zone-concentration-${index}" class="form-label mb-0" style="font-weight: 500;">Concentration:</label>
+                            <input type="number" id="zone-concentration-${index}" class="form-control form-control-sm zone-concentration-input" value="${zone.concentration || ''}" step="0.01" placeholder="e.g., 100.0">
+                        </div>
                     </div>
                     <div class="text-end">
                         ${zone.confidence ? `<small class="text-muted">Confidence: ${Math.round(zone.confidence * 100)}%</small>` : ''}
@@ -625,16 +642,70 @@ class BioassayTool {
         
         container.innerHTML = statsHTML;
     }
+
+    displayUsp81Validation(validation) {
+        const container = document.getElementById('usp81ValidationContent');
+        if (!validation || !validation.replicates || !validation.cv) {
+            container.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <div>Not enough data for USP-81 validation.</div>
+                    <small>Ensure concentrations are entered.</small>
+                </div>
+            `;
+            return;
+        }
+
+        const getStatusBadge = (isCompliant) => {
+            return isCompliant
+                ? '<span class="badge bg-success float-end">PASS</span>'
+                : '<span class="badge bg-danger float-end">FAIL</span>';
+        };
+
+        let validationHTML = `
+            <div class="usp81-validation-item">
+                <h6 class="mb-1">Replicate Count (≥3) ${getStatusBadge(validation.replicates.is_compliant)}</h6>
+                <ul class="list-unstyled small mb-2">
+        `;
+        for (const [conc, count] of Object.entries(validation.replicates.replicate_counts)) {
+            validationHTML += `<li>Concentration ${conc}: <strong>${count} replicates</strong></li>`;
+        }
+        validationHTML += '</ul></div>';
+
+        validationHTML += `
+            <div class="usp81-validation-item mt-2">
+                <h6 class="mb-1">CV% per Concentration (≤15%) ${getStatusBadge(validation.cv.is_compliant)}</h6>
+                <ul class="list-unstyled small">
+        `;
+        for (const [conc, cvData] of Object.entries(validation.cv.cv_values)) {
+            const cvStatusClass = cvData.cv_percent > 15 ? 'text-danger' : '';
+            validationHTML += `<li>Concentration ${conc}: <strong class="${cvStatusClass}">${cvData.cv_percent.toFixed(2)}%</strong></li>`;
+        }
+        validationHTML += '</ul></div>';
+
+        container.innerHTML = validationHTML;
+    }
     
     clearStatistics() {
-        const container = document.getElementById('statisticsContent');
-        container.innerHTML = `
+        const statsContainer = document.getElementById('statisticsContent');
+        statsContainer.innerHTML = `
             <div class="text-muted text-center py-3">
                 <i class="fas fa-chart-bar fa-2x mb-2"></i>
                 <div>No statistics available</div>
                 <small>Analyze zones to see statistics</small>
             </div>
         `;
+
+        const validationContainer = document.getElementById('usp81ValidationContent');
+        if (validationContainer) {
+            validationContainer.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <div>No validation performed</div>
+                    <small>Enter concentrations and calculate statistics.</small>
+                </div>
+            `;
+        }
     }
     
     displayAuditLog(entries) {

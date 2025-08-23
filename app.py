@@ -321,7 +321,7 @@ def add_manual_zone():
 
 @app.route('/calculate_statistics', methods=['POST'])
 def calculate_statistics():
-    """Calculate basic statistics for measured zones"""
+    """Calculate basic statistics and perform USP-81 validation"""
     try:
         if 'current_assay' not in session:
             return jsonify({'error': 'No assay data found'}), 400
@@ -332,28 +332,50 @@ def calculate_statistics():
         if not zones:
             return jsonify({'error': 'No zone data provided'}), 400
         
-        # Extract diameters
+        # --- Standard Statistics Calculation ---
         diameters = [zone['diameter_mm'] for zone in zones if 'diameter_mm' in zone]
-        
         if not diameters:
             return jsonify({'error': 'No valid diameter measurements found'}), 400
         
-        # Calculate statistics
         stats = image_processor.calculate_statistics(diameters)
-        
-        # Store statistics in session
         session['statistics'] = stats
         
+        # --- USP-81 Validation ---
+        # Group zones by concentration
+        concentration_data = {}
+        for zone in zones:
+            concentration = zone.get('concentration')
+            if concentration is not None:
+                if concentration not in concentration_data:
+                    concentration_data[concentration] = []
+                concentration_data[concentration].append(zone['diameter_mm'])
+
+        # Perform validation if there is concentration data
+        usp81_validation_results = {}
+        if concentration_data:
+            replicate_validation = usp_calculator.validate_minimum_replicates(concentration_data)
+            cv_validation = usp_calculator.validate_cv_threshold(concentration_data)
+            usp81_validation_results = {
+                'replicates': replicate_validation,
+                'cv': cv_validation
+            }
+
         # Log calculation
         assay = session['current_assay']
-        audit_logger.log_action(
-            assay['analyst_name'],
-            'STATISTICS_CALC',
-            f"Statistics calculated for {len(diameters)} zones",
-            {'assay_id': assay['id'], 'zone_count': len(diameters), 'mean': stats['mean']}
+        log_audit_event(
+            user_id=current_user.id,
+            action='STATISTICS_CALCULATED',
+            description=f"Calculated statistics for {len(diameters)} zones in assay '{assay['assay_name']}'",
+            entity_type='assay',
+            entity_id=assay['id'],
+            new_values={'zone_count': len(diameters), 'mean': stats['mean']}
         )
         
-        return jsonify({'success': True, 'statistics': stats})
+        return jsonify({
+            'success': True,
+            'statistics': stats,
+            'usp81_validation': usp81_validation_results
+        })
         
     except Exception as e:
         return jsonify({'error': f'Statistics calculation failed: {str(e)}'}), 500
