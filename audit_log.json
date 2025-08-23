@@ -92,5 +92,132 @@
       "zone_count": 6,
       "mean": 7.563
     }
+  },
+  {
+    "timestamp": "2025-08-23T16:05:46.124587",
+    "user": "khurram",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "dc0a7fdb-b65b-46c5-a592-950757f1466b",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:05:49.121519",
+    "user": "khurram",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "dc0a7fdb-b65b-46c5-a592-950757f1466b",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:07:10.299061",
+    "user": "khurram",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "dc0a7fdb-b65b-46c5-a592-950757f1466b",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:07:16.178481",
+    "user": "khurram",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "dc0a7fdb-b65b-46c5-a592-950757f1466b",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:10:10.957642",
+    "user": "khurram",
+    "action": "MANUAL_ZONE_ADD",
+    "description": "Manual zone added",
+    "metadata": {
+      "assay_id": "fbbae9c5-b38e-4a88-9a13-05e2fadb66dd",
+      "zone_id": "cf3510ce-9717-4fcb-81da-bc7b644da988",
+      "diameter_mm": 15
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:10:13.220314",
+    "user": "khurram",
+    "action": "MANUAL_ZONE_ADD",
+    "description": "Manual zone added",
+    "metadata": {
+      "assay_id": "fbbae9c5-b38e-4a88-9a13-05e2fadb66dd",
+      "zone_id": "55bf1380-f47b-412a-8344-725cde9e2d44",
+      "diameter_mm": 15
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:10:17.800862",
+    "user": "khurram",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "fbbae9c5-b38e-4a88-9a13-05e2fadb66dd",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:10:22.181070",
+    "user": "khurram",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "fbbae9c5-b38e-4a88-9a13-05e2fadb66dd",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:55:54.465462",
+    "user": "khurram",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "0ecbc866-e9f1-4481-a02c-1f162cb2b6f8",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:55:57.326256",
+    "user": "khurram",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "0ecbc866-e9f1-4481-a02c-1f162cb2b6f8",
+      "zone_count": 6,
+      "mean": 7.563
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:57:08.235655",
+    "user": "khurram",
+    "action": "AUTO_DETECTION",
+    "description": "Automated zone detection performed",
+    "metadata": {
+      "assay_id": "0d6a5ddb-4fc5-4c50-b1a3-1f5b46d3446d",
+      "zones_detected": 6
+    }
+  },
+  {
+    "timestamp": "2025-08-23T16:57:10.369517",
+    "user": "khurram",
+    "action": "STATISTICS_CALC",
+    "description": "Statistics calculated for 6 zones",
+    "metadata": {
+      "assay_id": "0d6a5ddb-4fc5-4c50-b1a3-1f5b46d3446d",
+      "zone_count": 6,
+      "mean": 7.563
+    }
   }
 ]

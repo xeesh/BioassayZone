@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USP-81 Compliance Report - {{ assay.name }} - BioassayZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .report-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .compliance-score-large {
+            font-size: 4rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .validation-section {
+            border-left: 4px solid #dee2e6;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .validation-pass { border-left-color: #28a745; }
+        .validation-fail { border-left-color: #dc3545; }
+        .validation-warning { border-left-color: #ffc107; }
+        .requirement-item {
+            background-color: #f8f9fa;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .requirement-met { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .requirement-failed { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .statistics-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        @media print {
+            .print-button, .no-print { display: none !important; }
+            .container-fluid { max-width: 100% !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Button -->
+    <div class="print-button no-print">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Report Header -->
+        <div class="report-header text-center">
+            <div class="row">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-clipboard-check"></i> USP-81 Compliance Report</h1>
+                    <h3>{{ assay.name }}</h3>
+                    <p class="mb-0">
+                        <strong>Analyst:</strong> {{ assay.analyst.username }} | 
+                        <strong>Sample Type:</strong> {{ assay.sample_type }} | 
+                        <strong>Date:</strong> {{ assay.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <div class="compliance-score-large">
+                        {% if validation_result.is_compliant %}
+                            <span class="text-success">{{ "%.0f"|format(validation_result.score) }}%</span>
+                        {% else %}
+                            <span class="text-danger">{{ "%.0f"|format(validation_result.score) }}%</span>
+                        {% endif %}
+                    </div>
+                    <h4>
+                        {% if validation_result.is_compliant %}
+                            <i class="fas fa-check-circle"></i> COMPLIANT
+                        {% else %}
+                            <i class="fas fa-times-circle"></i> NON-COMPLIANT
+                        {% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4><i class="fas fa-chart-line"></i> Executive Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><strong>Overall Compliance Score:</strong></h6>
+                                <p class="h3">
+                                    {% if validation_result.is_compliant %}
+                                        <span class="text-success">{{ "%.1f"|format(validation_result.score) }}%</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ "%.1f"|format(validation_result.score) }}%</span>
+                                    {% endif %}
+                                </p>
+                                
+                                <h6><strong>Validation Checks:</strong></h6>
+                                <p>{{ validation_result.checks_passed }} of {{ validation_result.total_checks }} checks passed</p>
+                                
+                                <h6><strong>Status:</strong></h6>
+                                <p>
+                                    {% if validation_result.is_compliant %}
+                                        <span class="badge bg-success fs-6">COMPLIANT WITH USP-81</span>
+                                    {% else %}
+                                        <span class="badge bg-danger fs-6">NON-COMPLIANT - ACTION REQUIRED</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><strong>Assay Information:</strong></h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Total Concentrations:</strong> {{ report_data.assay_information.total_concentrations }}</li>
+                                    <li><strong>Total Measurements:</strong> {{ report_data.assay_information.total_measurements }}</li>
+                                    <li><strong>Concentration Range:</strong> 
+                                        {{ report_data.assay_information.concentration_range.min }} - 
+                                        {{ report_data.assay_information.concentration_range.max }} μg/mL
+                                    </li>
+                                </ul>
+                                
+                                <h6><strong>Report Generated:</strong></h6>
+                                <p>{{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Validation Results -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h4><i class="fas fa-list-check"></i> Detailed Validation Results</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Minimum Replicates Validation -->
+                        <div class="validation-section {% if report_data.detailed_results.replicate_validation.is_compliant %}validation-pass{% else %}validation-fail{% endif %}">
+                            <h5><i class="fas fa-layer-group"></i> Minimum Replicates Validation</h5>
+                            <p><strong>Requirement:</strong> ≥{{ report_data.usp81_requirements.minimum_replicates }} replicates per concentration</p>
+                            <p><strong>Status:</strong> 
+                                {% if report_data.detailed_results.replicate_validation.is_compliant %}
+                                    <span class="badge bg-success">PASS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">FAIL</span>
+                                {% endif %}
+                            </p>
+                            
+                            {% if report_data.detailed_results.replicate_validation.failed_concentrations %}
+                            <div class="alert alert-warning">
+                                <h6>Failed Concentrations:</h6>
+                                <ul>
+                                    {% for failed in report_data.detailed_results.replicate_validation.failed_concentrations %}
+                                    <li>{{ failed.concentration }} μg/mL: {{ failed.replicate_count }} replicates (required: {{ failed.required }})</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            
+                            <h6>Replicate Counts by Concentration:</h6>
+                            <div class="row">
+                                {% for concentration, count in report_data.detailed_results.replicate_validation.replicate_counts.items() %}
+                                <div class="col-md-3 mb-2">
+                                    <div class="requirement-item {% if count >= 3 %}requirement-met{% else %}requirement-failed{% endif %}">
+                                        <strong>{{ concentration }} μg/mL:</strong> {{ count }} replicates
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- CV% Threshold Validation -->
+                        <div class="validation-section {% if report_data.detailed_results.cv_validation.is_compliant %}validation-pass{% else %}validation-fail{% endif %}">
+                            <h5><i class="fas fa-percentage"></i> CV% Threshold Validation</h5>
+                            <p><strong>Requirement:</strong> ≤{{ report_data.usp81_requirements.max_cv_percent }} coefficient of variation</p>
+                            <p><strong>Status:</strong> 
+                                {% if report_data.detailed_results.cv_validation.is_compliant %}
+                                    <span class="badge bg-success">PASS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">FAIL</span>
+                                {% endif %}
+                            </p>
+                            
+                            {% if report_data.detailed_results.cv_validation.failed_concentrations %}
+                            <div class="alert alert-warning">
+                                <h6>Failed Concentrations:</h6>
+                                <ul>
+                                    {% for failed in report_data.detailed_results.cv_validation.failed_concentrations %}
+                                    <li>{{ failed.concentration }} μg/mL: CV = {{ "%.2f"|format(failed.cv_percent) }}% (threshold: {{ failed.threshold }}%)</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            
+                            <h6>CV% Values by Concentration:</h6>
+                            <div class="row">
+                                {% for concentration, cv_data in report_data.detailed_results.cv_validation.cv_values.items() %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="requirement-item {% if cv_data.cv_percent <= 15 %}requirement-met{% else %}requirement-failed{% endif %}">
+                                        <strong>{{ concentration }} μg/mL:</strong><br>
+                                        CV: {{ "%.2f"|format(cv_data.cv_percent) }}%<br>
+                                        Mean: {{ "%.2f"|format(cv_data.mean) }} mm<br>
+                                        Std Dev: {{ "%.2f"|format(cv_data.std) }} mm
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Concentration Range Validation -->
+                        <div class="validation-section {% if report_data.detailed_results.concentration_validation.is_compliant %}validation-pass{% else %}validation-fail{% endif %}">
+                            <h5><i class="fas fa-chart-area"></i> Concentration Range Validation</h5>
+                            <p><strong>Requirement:</strong> ≥{{ report_data.usp81_requirements.min_concentration_points }} concentration points</p>
+                            <p><strong>Status:</strong> 
+                                {% if report_data.detailed_results.concentration_validation.is_compliant %}
+                                    <span class="badge bg-success">PASS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">FAIL</span>
+                                {% endif %}
+                            </p>
+                            
+                            <p><strong>Concentrations:</strong> {{ report_data.detailed_results.concentration_validation.concentration_count }} points</p>
+                            <p><strong>Range:</strong> {{ report_data.detailed_results.concentration_validation.concentration_range.min }} - {{ report_data.detailed_results.concentration_validation.concentration_range.max }} μg/mL</p>
+                        </div>
+
+                        <!-- Zone Measurement Validation -->
+                        <div class="validation-section {% if report_data.detailed_results.zone_validation.is_compliant %}validation-pass{% else %}validation-fail{% endif %}">
+                            <h5><i class="fas fa-ruler"></i> Zone Measurement Validation</h5>
+                            <p><strong>Requirement:</strong> ≥{{ report_data.usp81_requirements.min_zone_measurements }} zone measurements per standard</p>
+                            <p><strong>Status:</strong> 
+                                {% if report_data.detailed_results.zone_validation.is_compliant %}
+                                    <span class="badge bg-success">PASS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">FAIL</span>
+                                {% endif %}
+                            </p>
+                            
+                            <p><strong>Total Zones:</strong> {{ report_data.detailed_results.zone_validation.total_zones }}</p>
+                            <p><strong>Valid Zones:</strong> {{ report_data.detailed_results.zone_validation.valid_zones }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h4><i class="fas fa-lightbulb"></i> Recommendations</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if report_data.recommendations %}
+                        <ul class="list-group list-group-flush">
+                            {% for recommendation in report_data.recommendations %}
+                            <li class="list-group-item">
+                                <i class="fas fa-arrow-right text-warning me-2"></i>
+                                {{ recommendation }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-success"><i class="fas fa-check-circle"></i> No specific recommendations - all requirements are met!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USP-81 Requirements Reference -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h4><i class="fas fa-book"></i> USP-81 Requirements Reference</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-check-circle text-success"></i> Minimum Replicates</h6>
+                                <p class="text-muted">≥3 replicates per concentration for statistical validity</p>
+                                
+                                <h6><i class="fas fa-check-circle text-success"></i> CV% Threshold</h6>
+                                <p class="text-muted">≤15% coefficient of variation for acceptable precision</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-check-circle text-success"></i> Concentration Range</h6>
+                                <p class="text-muted">≥3 concentration points for standard curve</p>
+                                
+                                <h6><i class="fas fa-check-circle text-success"></i> Zone Measurements</h6>
+                                <p class="text-muted">≥3 zone measurements per standard for precision</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <hr>
+                <p class="text-muted">
+                    <strong>Report Generated by:</strong> {{ user.username }} | 
+                    <strong>Date:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }} | 
+                    <strong>BioassayZone v2.0</strong>
+                </p>
+                <p class="text-muted small">
+                    This report is generated automatically based on USP-81 compliance validation. 
+                    For questions or concerns, please contact your system administrator.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add any interactive features here
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-format numbers for better display
+            const numbers = document.querySelectorAll('.compliance-score-large, .h3');
+            numbers.forEach(function(element) {
+                const text = element.textContent;
+                if (text.includes('%')) {
+                    const number = parseFloat(text);
+                    if (!isNaN(number)) {
+                        element.textContent = number.toFixed(1) + '%';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

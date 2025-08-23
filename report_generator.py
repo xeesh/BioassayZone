@@ -253,11 +253,23 @@ class ReportGenerator:
         audit_data = [['Timestamp', 'User', 'Action', 'Description']]
         
         for entry in audit_trail:
+            # Convert timestamp to string and format it
+            timestamp_str = entry.timestamp.strftime("%Y-%m-%d %H:%M:%S") if entry.timestamp else 'N/A'
+            
+            # Get user information if available
+            user_info = 'N/A'
+            if hasattr(entry, 'user_id') and entry.user_id:
+                # Try to get username from user relationship if it exists
+                if hasattr(entry, 'user') and entry.user:
+                    user_info = entry.user.username
+                else:
+                    user_info = f"User ID: {entry.user_id}"
+            
             audit_data.append([
-                entry.get('timestamp', 'N/A')[:19],  # Remove microseconds
-                entry.get('user', 'N/A'),
-                entry.get('action', 'N/A'),
-                entry.get('description', 'N/A')
+                timestamp_str,
+                user_info,
+                getattr(entry, 'action', 'N/A'),
+                getattr(entry, 'description', 'N/A')
             ])
         
         audit_table = Table(audit_data, colWidths=[1.5*inch, 1.2*inch, 1.2*inch, 2.6*inch])

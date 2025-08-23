@@ -64,7 +64,7 @@ def login():
                 return redirect(url_for('auth.change_password'))
             
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('index'))
+            return redirect(next_page or url_for('dashboard'))
         else:
             flash('Invalid username or password', 'error')
             log_security_event('LOGIN_ATTEMPT_FAILED', f'Invalid credentials for username: {username}')
@@ -128,7 +128,7 @@ def change_password():
         )
         
         flash('Password changed successfully', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     
     return render_template('auth/change_password.html')
 
@@ -224,7 +224,7 @@ def require_permission(permission):
             
             if not current_user.has_permission(permission):
                 flash('Insufficient permissions for this action', 'error')
-                return redirect(url_for('index'))
+                return redirect(url_for('dashboard'))
             
             return f(*args, **kwargs)
         decorated_function.__name__ = f.__name__

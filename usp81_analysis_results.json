@@ -1,0 +1,108 @@
+{
+  "file_path": "Data\\Bioassy USP-81.xlsx",
+  "standards": [
+    "S1",
+    "S2",
+    "S4",
+    "S5",
+    "U3"
+  ],
+  "concentrations": [
+    15.93,
+    31.25,
+    125,
+    250
+  ],
+  "replicates": [
+    1,
+    2,
+    3
+  ],
+  "zone_data": {
+    "S1": {
+      "measurements": [
+        14.69,
+        15.6,
+        15.1,
+        18.18,
+        18.01,
+        18.2
+      ],
+      "count": 6,
+      "mean": 16.63,
+      "std": 1.5240953600961678,
+      "cv_percent": 9.164734576645628
+    },
+    "S2": {
+      "measurements": [
+        15.64,
+        15.6,
+        15.46,
+        18.94,
+        18.76,
+        19.43
+      ],
+      "count": 6,
+      "mean": 17.305000000000003,
+      "std": 1.7506736798539393,
+      "cv_percent": 10.116577173383062
+    },
+    "S4": {
+      "measurements": [
+        16.59,
+        17.93,
+        17.36,
+        19.79,
+        19.92,
+        18.1
+      ],
+      "count": 6,
+      "mean": 18.281666666666666,
+      "std": 1.2129223204952395,
+      "cv_percent": 6.634637544873222
+    },
+    "S5": {
+      "measurements": [
+        18.15,
+        14.59,
+        16.46,
+        19.1,
+        17.56,
+        17.27
+      ],
+      "count": 6,
+      "mean": 17.188333333333333,
+      "std": 1.4145601986326195,
+      "cv_percent": 8.229769409285094
+    },
+    "U3": {
+      "measurements": [
+        14.9,
+        14.89,
+        15.07,
+        18.88,
+        19.19,
+        19.19
+      ],
+      "count": 6,
+      "mean": 17.02,
+      "std": 2.0700724624998035,
+      "cv_percent": 12.162587911279692
+    }
+  },
+  "compliance_checks": {
+    "minimum_replicates": false,
+    "cv_percent_acceptable": true,
+    "concentration_range": true,
+    "zone_measurement_precision": true
+  },
+  "compliance_score": 75.0,
+  "recommendations": [
+    "Implement minimum replicate validation (\u22653 per concentration)",
+    "Add USP-81 specific validation rules",
+    "Implement concentration-response curve analysis",
+    "Add statistical significance testing",
+    "Include potency calculation features",
+    "Add compliance reporting templates"
+  ]
+}

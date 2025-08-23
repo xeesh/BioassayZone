@@ -1,0 +1,61 @@
+# BioassayZone Production Dependencies
+# Core Flask and extensions
+Flask==3.0.0
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.1
+WTForms==3.1.1
+
+# Database drivers
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+
+# Image processing and analysis
+opencv-python==4.8.1.78
+Pillow==10.1.0
+numpy==1.25.2
+scipy==1.11.4
+
+# PDF generation and reporting
+reportlab==4.0.7
+
+# Security and cryptography
+bcrypt==4.1.2
+cryptography==41.0.7
+
+# Utilities
+python-dotenv==1.0.0
+Werkzeug==3.0.1
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+
+# Production server
+gunicorn==21.2.0
+
+# Monitoring and logging
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Background tasks (optional)
+celery==5.3.4
+redis==5.0.1
+
+# Rate limiting
+Flask-Limiter==3.5.0
+
+# CORS support
+Flask-CORS==4.0.0
+
+# Health checks
+Flask-HealthChecks==0.1.0
+
+# Development and testing (optional)
+pytest==7.4.3
+pytest-flask==1.3.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Documentation
+Sphinx==7.2.6
+sphinx-rtd-theme==1.3.0

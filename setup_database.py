@@ -1,173 +1,231 @@
 #!/usr/bin/env python3
 """
-Database Setup Script for Bioassay Zone Measurement Tool
-USP-81 / 21 CFR Part 11 Compliant System
-
-This script helps you set up the PostgreSQL database for local development.
+Database setup script for BioassayZone
+Handles both SQLite (development) and PostgreSQL (production) setup
 """
 
 import os
 import sys
-import subprocess
 import psycopg2
-from psycopg2 import sql
-from werkzeug.security import generate_password_hash
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import sqlite3
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+import logging
 
-def check_postgresql_installed():
-    """Check if PostgreSQL is installed and running"""
-    try:
-        result = subprocess.run(['psql', '--version'], capture_output=True, text=True)
-        if result.returncode == 0:
-            print("✓ PostgreSQL is installed:", result.stdout.strip())
-            return True
-    except FileNotFoundError:
-        pass
-    
-    print("✗ PostgreSQL is not installed or not in PATH")
-    return False
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def check_postgresql_running():
-    """Check if PostgreSQL service is running"""
+def setup_sqlite():
+    """Setup SQLite database for development"""
     try:
-        # Try to connect to default PostgreSQL service
-        conn = psycopg2.connect(
-            host='localhost',
-            port=5432,
-            user='postgres',
-            database='postgres'
-        )
+        db_path = 'instance/bioassay.db'
+        os.makedirs('instance', exist_ok=True)
+        
+        # Create SQLite database
+        conn = sqlite3.connect(db_path)
         conn.close()
-        print("✓ PostgreSQL service is running")
+        
+        logger.info(f"SQLite database created at {db_path}")
         return True
-    except psycopg2.Error:
-        print("✗ PostgreSQL service is not running or not accessible")
+        
+    except Exception as e:
+        logger.error(f"Failed to setup SQLite: {e}")
         return False
 
-def create_database(db_name='bioassay_db', db_user='bioassay_user', db_password='bioassay_pass'):
-    """Create database and user for the bioassay application"""
+def setup_postgresql():
+    """Setup PostgreSQL database for production"""
     try:
-        # Connect to PostgreSQL as superuser
+        # Get environment variables
+        db_host = os.getenv('PGHOST', 'localhost')
+        db_port = os.getenv('PGPORT', '5432')
+        db_user = os.getenv('PGUSER', 'postgres')
+        db_password = os.getenv('PGPASSWORD')
+        db_name = os.getenv('PGDATABASE', 'bioassay_db')
+        
+        if not db_password:
+            logger.error("PGPASSWORD environment variable not set")
+            logger.info("Please set PGPASSWORD environment variable or use .env file")
+            return False
+        
+        # Connect to PostgreSQL server
         conn = psycopg2.connect(
-            host='localhost',
-            port=5432,
-            user='postgres',
-            database='postgres'
+            host=db_host,
+            port=db_port,
+            user=db_user,
+            password=db_password,
+            database='postgres'  # Connect to default database first
         )
-        conn.autocommit = True
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
         
-        # Create database user
-        try:
-            cursor.execute(
-                sql.SQL("CREATE USER {} WITH PASSWORD %s").format(sql.Identifier(db_user)),
-                [db_password]
-            )
-            print(f"✓ Created user: {db_user}")
-        except psycopg2.Error as e:
-            if "already exists" in str(e):
-                print(f"✓ User {db_user} already exists")
-            else:
-                raise
+        # Check if database exists
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+        db_exists = cursor.fetchone()
         
-        # Create database
-        try:
-            cursor.execute(
-                sql.SQL("CREATE DATABASE {} OWNER {}").format(
-                    sql.Identifier(db_name),
-                    sql.Identifier(db_user)
-                )
-            )
-            print(f"✓ Created database: {db_name}")
-        except psycopg2.Error as e:
-            if "already exists" in str(e):
-                print(f"✓ Database {db_name} already exists")
-            else:
-                raise
-        
-        # Grant privileges
-        cursor.execute(
-            sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {}").format(
-                sql.Identifier(db_name),
-                sql.Identifier(db_user)
-            )
-        )
-        print(f"✓ Granted privileges to {db_user}")
+        if not db_exists:
+            # Create database
+            cursor.execute(f"CREATE DATABASE {db_name}")
+            logger.info(f"Database '{db_name}' created successfully")
+        else:
+            logger.info(f"Database '{db_name}' already exists")
         
         cursor.close()
         conn.close()
+        
+        # Now connect to the new database and create user
+        conn = psycopg2.connect(
+            host=db_host,
+            port=db_port,
+            user=db_user,
+            password=db_password,
+            database=db_name
+        )
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cursor = conn.cursor()
+        
+        # Create bioassay user if it doesn't exist
+        cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = 'bioassay_user'")
+        user_exists = cursor.fetchone()
+        
+        if not user_exists:
+            cursor.execute("CREATE USER bioassay_user WITH PASSWORD 'bioassay_pass'")
+            logger.info("User 'bioassay_user' created successfully")
+        else:
+            logger.info("User 'bioassay_user' already exists")
+        
+        # Grant privileges
+        cursor.execute(f"GRANT ALL PRIVILEGES ON DATABASE {db_name} TO bioassay_user")
+        cursor.execute(f"GRANT ALL PRIVILEGES ON SCHEMA public TO bioassay_user")
+        cursor.execute("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bioassay_user")
+        cursor.execute("GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO bioassay_user")
+        
+        # Set default privileges for future tables
+        cursor.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO bioassay_user")
+        cursor.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO bioassay_user")
+        
+        cursor.close()
+        conn.close()
+        
+        logger.info("PostgreSQL setup completed successfully")
         return True
         
-    except psycopg2.Error as e:
-        print(f"✗ Database setup failed: {e}")
+    except psycopg2.OperationalError as e:
+        logger.error(f"PostgreSQL connection failed: {e}")
+        logger.info("Make sure PostgreSQL is running and credentials are correct")
+        return False
+    except Exception as e:
+        logger.error(f"PostgreSQL setup failed: {e}")
         return False
 
-def create_env_file(db_name='bioassay_db', db_user='bioassay_user', db_password='bioassay_pass'):
+def test_database_connection():
+    """Test database connection"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if db_url and db_url.startswith('postgresql://'):
+            # Test PostgreSQL connection
+            engine = create_engine(db_url)
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT version()"))
+                version = result.fetchone()[0]
+                logger.info(f"PostgreSQL connection successful: {version}")
+                return True
+        else:
+            # Test SQLite connection
+            db_path = 'instance/bioassay.db'
+            if os.path.exists(db_path):
+                conn = sqlite3.connect(db_path)
+                conn.close()
+                logger.info("SQLite connection successful")
+                return True
+            else:
+                logger.error("SQLite database file not found")
+                return False
+                
+    except Exception as e:
+        logger.error(f"Database connection test failed: {e}")
+        return False
+
+def create_env_file():
     """Create .env file with database configuration"""
-    env_content = f"""# Bioassay Database Configuration
-DATABASE_URL=postgresql://{db_user}:{db_password}@localhost:5432/{db_name}
+    try:
+        env_content = """# BioassayZone Environment Configuration
+
+# Database Configuration
+DATABASE_URL=postgresql://bioassay_user:bioassay_pass@localhost:5432/bioassay_db
+
+# PostgreSQL Environment Variables
 PGHOST=localhost
 PGPORT=5432
-PGUSER={db_user}
-PGPASSWORD={db_password}
-PGDATABASE={db_name}
+PGUSER=bioassay_user
+PGPASSWORD=bioassay_pass
+PGDATABASE=bioassay_db
 
 # Flask Configuration
 SECRET_KEY=your-secret-key-change-this-in-production
-FLASK_ENV=development
-FLASK_DEBUG=true
+FLASK_ENV=production
+FLASK_DEBUG=0
+
+# Security Settings
+SESSION_COOKIE_SECURE=True
+SESSION_COOKIE_HTTPONLY=True
+SESSION_COOKIE_SAMESITE=Lax
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FILE=logs/bioassay.log
 """
-    
-    with open('.env', 'w') as f:
-        f.write(env_content)
-    
-    print("✓ Created .env file with database configuration")
-    print("  Make sure to change the SECRET_KEY in production!")
+        
+        with open('.env', 'w') as f:
+            f.write(env_content)
+        
+        logger.info(".env file created successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to create .env file: {e}")
+        return False
 
 def main():
-    print("=== Bioassay Database Setup ===")
-    print()
+    """Main setup function"""
+    logger.info("Starting BioassayZone database setup...")
     
-    # Check prerequisites
-    if not check_postgresql_installed():
-        print("\nPlease install PostgreSQL first:")
-        print("  Windows: Download from https://www.postgresql.org/download/windows/")
-        print("  macOS:   brew install postgresql")
-        print("  Ubuntu:  sudo apt-get install postgresql postgresql-contrib")
-        return 1
+    # Check if we're using PostgreSQL or SQLite
+    db_url = os.getenv('DATABASE_URL')
     
-    if not check_postgresql_running():
-        print("\nPlease start PostgreSQL service:")
-        print("  Windows: Start 'postgresql' service from Services")
-        print("  macOS:   brew services start postgresql")
-        print("  Ubuntu:  sudo systemctl start postgresql")
-        return 1
-    
-    print("\n=== Creating Database ===")
-    
-    # Get database configuration
-    db_name = input("Database name (bioassay_db): ").strip() or 'bioassay_db'
-    db_user = input("Database user (bioassay_user): ").strip() or 'bioassay_user'
-    db_password = input("Database password (bioassay_pass): ").strip() or 'bioassay_pass'
-    
-    print(f"\nCreating database '{db_name}' with user '{db_user}'...")
-    
-    if create_database(db_name, db_user, db_password):
-        create_env_file(db_name, db_user, db_password)
+    if db_url and db_url.startswith('postgresql://'):
+        logger.info("PostgreSQL configuration detected")
         
-        print("\n=== Setup Complete ===")
-        print("Database setup completed successfully!")
-        print("\nNext steps:")
-        print("1. Install Python dependencies: pip install -r requirements.txt")
-        print("2. Run the application: python app.py")
-        print("3. Open http://localhost:5000 in your browser")
-        print("4. Login with default admin account:")
-        print("   Username: admin")
-        print("   Password: Admin123!")
-        print("\n⚠️  Change the admin password after first login!")
-        return 0
+        # Try to setup PostgreSQL
+        if setup_postgresql():
+            logger.info("PostgreSQL setup completed")
+        else:
+            logger.error("PostgreSQL setup failed, falling back to SQLite")
+            if setup_sqlite():
+                logger.info("SQLite setup completed as fallback")
+            else:
+                logger.error("Both PostgreSQL and SQLite setup failed")
+                sys.exit(1)
     else:
-        print("\n✗ Database setup failed")
-        return 1
+        logger.info("No PostgreSQL configuration, setting up SQLite")
+        if setup_sqlite():
+            logger.info("SQLite setup completed")
+        else:
+            logger.error("SQLite setup failed")
+            sys.exit(1)
+    
+    # Create .env file if it doesn't exist
+    if not os.path.exists('.env'):
+        create_env_file()
+    
+    # Test database connection
+    if test_database_connection():
+        logger.info("Database setup completed successfully!")
+        logger.info("You can now run the application with: python app.py")
+    else:
+        logger.error("Database connection test failed")
+        sys.exit(1)
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

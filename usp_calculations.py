@@ -1,360 +1,390 @@
+#!/usr/bin/env python3
+"""
+USP-81 Compliance Calculator
+Implements USP-81 specific calculations and validation rules
+"""
+
 import numpy as np
-from scipy import stats
-from typing import Dict, List, Any, Tuple, Optional
-import math
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
+import json
+
+@dataclass
+class USP81ValidationResult:
+    """Result of USP-81 validation checks"""
+    is_compliant: bool
+    score: float
+    checks_passed: int
+    total_checks: int
+    details: Dict
+    recommendations: List[str]
 
 class USP81Calculator:
-    """USP-81 compliant statistical calculations for bioassay analysis"""
+    """Calculator for USP-81 compliance requirements"""
     
     def __init__(self):
-        self.confidence_level = 0.95
-        self.alpha = 1 - self.confidence_level
-    
-    def parallel_line_assay(self, standard_responses: List[List[float]], 
-                           test_responses: List[List[float]], 
-                           standard_doses: List[float], 
-                           test_doses: List[float]) -> Dict[str, Any]:
+        # USP-81 specific thresholds
+        self.MIN_REPLICATES = 3
+        self.MAX_CV_PERCENT = 15.0
+        self.MIN_CONCENTRATION_POINTS = 3
+        self.MIN_ZONE_MEASUREMENTS = 3
+        
+    def validate_minimum_replicates(self, concentration_data: Dict) -> Dict:
         """
-        Perform USP-81 parallel line assay analysis (2+2, 3+3 designs)
+        Validate minimum replicates per concentration (USP-81 requirement: ≥3)
         
         Args:
-            standard_responses: List of response lists for each standard dose level
-            test_responses: List of response lists for each test dose level  
-            standard_doses: Dose levels for standard
-            test_doses: Dose levels for test sample
+            concentration_data: Dict with concentration as key and list of measurements as values
             
         Returns:
-            Dictionary containing ANOVA results, potency estimate, and validity tests
+            Dict with validation results
         """
-        try:
-            # Prepare data for ANOVA
-            standard_data = self._prepare_assay_data(standard_responses, standard_doses, 'Standard')
-            test_data = self._prepare_assay_data(test_responses, test_doses, 'Test')
-            
-            # Combine data
-            all_data = standard_data + test_data
-            
-            # Perform ANOVA
-            anova_results = self._perform_anova(all_data)
-            
-            # Calculate potency estimate
-            potency_results = self._calculate_potency(standard_data, test_data)
-            
-            # Perform validity tests
-            validity_results = self._perform_validity_tests(all_data, anova_results)
-            
-            # Calculate confidence intervals
-            confidence_intervals = self._calculate_confidence_intervals(potency_results, anova_results)
-            
-            return {
-                'anova_results': anova_results,
-                'potency_estimate': potency_results['potency'],
-                'potency_log': potency_results['log_potency'],
-                'confidence_intervals': confidence_intervals,
-                'validity_tests': validity_results,
-                'assay_valid': validity_results['overall_validity'],
-                'design_type': self._determine_design_type(standard_doses, test_doses),
-                'degrees_of_freedom': anova_results['df'],
-                'calculated_at': np.datetime64('now').item().isoformat()
-            }
-            
-        except Exception as e:
-            return {
-                'error': f"USP-81 calculation failed: {str(e)}",
-                'assay_valid': False
-            }
-    
-    def _prepare_assay_data(self, responses: List[List[float]], doses: List[float], 
-                           preparation_type: str) -> List[Dict[str, Any]]:
-        """Prepare data structure for ANOVA analysis"""
-        data = []
+        validation_results = {
+            'is_compliant': True,
+            'failed_concentrations': [],
+            'replicate_counts': {},
+            'overall_status': 'PASS'
+        }
         
-        for i, dose_responses in enumerate(responses):
-            log_dose = math.log10(doses[i]) if doses[i] > 0 else 0
+        for concentration, measurements in concentration_data.items():
+            replicate_count = len(measurements)
+            validation_results['replicate_counts'][concentration] = replicate_count
             
-            for response in dose_responses:
-                data.append({
-                    'response': response,
-                    'dose': doses[i],
-                    'log_dose': log_dose,
-                    'preparation': preparation_type,
-                    'dose_level': i
+            if replicate_count < self.MIN_REPLICATES:
+                validation_results['is_compliant'] = False
+                validation_results['failed_concentrations'].append({
+                    'concentration': concentration,
+                    'replicate_count': replicate_count,
+                    'required': self.MIN_REPLICATES
                 })
         
-        return data
+        if not validation_results['is_compliant']:
+            validation_results['overall_status'] = 'FAIL'
+            
+        return validation_results
     
-    def _perform_anova(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Perform Analysis of Variance for parallel line assay"""
-        # Extract responses and factors
-        responses = np.array([d['response'] for d in data])
-        preparations = np.array([d['preparation'] for d in data])
-        log_doses = np.array([d['log_dose'] for d in data])
+    def validate_cv_threshold(self, concentration_data: Dict) -> Dict:
+        """
+        Validate CV% threshold (USP-81 requirement: ≤15%)
         
-        # Calculate means
-        overall_mean = np.mean(responses)
-        
-        # Group by preparation
-        standard_responses = responses[preparations == 'Standard']
-        test_responses = responses[preparations == 'Test']
-        
-        standard_log_doses = log_doses[preparations == 'Standard']
-        test_log_doses = log_doses[preparations == 'Test']
-        
-        # Calculate regression lines for each preparation
-        standard_slope, standard_intercept, standard_r, _, _ = stats.linregress(standard_log_doses, standard_responses)
-        test_slope, test_intercept, test_r, _, _ = stats.linregress(test_log_doses, test_responses)
-        
-        # Calculate sums of squares
-        total_ss = np.sum((responses - overall_mean) ** 2)
-        
-        # Regression SS for each preparation
-        standard_fitted = standard_slope * standard_log_doses + standard_intercept
-        test_fitted = test_slope * test_log_doses + test_intercept
-        
-        regression_ss = (np.sum((standard_fitted - np.mean(standard_responses)) ** 2) + 
-                        np.sum((test_fitted - np.mean(test_responses)) ** 2))
-        
-        # Preparation SS
-        prep_ss = (len(standard_responses) * (np.mean(standard_responses) - overall_mean) ** 2 + 
-                  len(test_responses) * (np.mean(test_responses) - overall_mean) ** 2)
-        
-        # Error SS
-        error_ss = total_ss - regression_ss - prep_ss
-        
-        # Degrees of freedom
-        total_df = len(responses) - 1
-        regression_df = 2  # Two regression lines
-        prep_df = 1  # Standard vs Test
-        error_df = total_df - regression_df - prep_df
-        
-        # Mean squares
-        regression_ms = regression_ss / regression_df if regression_df > 0 else 0
-        prep_ms = prep_ss / prep_df if prep_df > 0 else 0
-        error_ms = error_ss / error_df if error_df > 0 else 0
-        
-        # F-statistics
-        regression_f = regression_ms / error_ms if error_ms > 0 else 0
-        prep_f = prep_ms / error_ms if error_ms > 0 else 0
-        
-        # P-values
-        regression_p = 1 - stats.f.cdf(regression_f, regression_df, error_df) if regression_f > 0 else 1
-        prep_p = 1 - stats.f.cdf(prep_f, prep_df, error_df) if prep_f > 0 else 1
-        
-        return {
-            'total_ss': total_ss,
-            'regression_ss': regression_ss,
-            'preparation_ss': prep_ss,
-            'error_ss': error_ss,
-            'total_df': total_df,
-            'regression_df': regression_df,
-            'preparation_df': prep_df,
-            'error_df': error_df,
-            'regression_ms': regression_ms,
-            'preparation_ms': prep_ms,
-            'error_ms': error_ms,
-            'regression_f': regression_f,
-            'preparation_f': prep_f,
-            'regression_p': regression_p,
-            'preparation_p': prep_p,
-            'standard_slope': standard_slope,
-            'test_slope': test_slope,
-            'standard_intercept': standard_intercept,
-            'test_intercept': test_intercept,
-            'df': error_df
-        }
-    
-    def _calculate_potency(self, standard_data: List[Dict[str, Any]], 
-                          test_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Calculate potency estimate"""
-        # Extract data for regression
-        std_responses = np.array([d['response'] for d in standard_data])
-        std_log_doses = np.array([d['log_dose'] for d in standard_data])
-        
-        test_responses = np.array([d['response'] for d in test_data])
-        test_log_doses = np.array([d['log_dose'] for d in test_data])
-        
-        # Calculate regression lines
-        std_slope, std_intercept, _, _, _ = stats.linregress(std_log_doses, std_responses)
-        test_slope, test_intercept, _, _, _ = stats.linregress(test_log_doses, test_responses)
-        
-        # Calculate potency (log scale)
-        # Potency is the horizontal distance between parallel lines
-        mean_response = (np.mean(std_responses) + np.mean(test_responses)) / 2
-        
-        # Find log doses that give mean response for each preparation
-        std_log_dose_at_mean = (mean_response - std_intercept) / std_slope if std_slope != 0 else 0
-        test_log_dose_at_mean = (mean_response - test_intercept) / test_slope if test_slope != 0 else 0
-        
-        log_potency = std_log_dose_at_mean - test_log_dose_at_mean
-        potency = 10 ** log_potency
-        
-        return {
-            'potency': potency,
-            'log_potency': log_potency,
-            'standard_slope': std_slope,
-            'test_slope': test_slope,
-            'standard_intercept': std_intercept,
-            'test_intercept': test_intercept
-        }
-    
-    def _perform_validity_tests(self, data: List[Dict[str, Any]], 
-                               anova_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Perform USP-81 validity tests"""
-        validity_tests = {}
-        
-        # Test 1: Linearity (Regression significance)
-        validity_tests['linearity'] = {
-            'f_value': anova_results['regression_f'],
-            'p_value': anova_results['regression_p'],
-            'significant': anova_results['regression_p'] < self.alpha,
-            'valid': anova_results['regression_p'] < self.alpha
+        Args:
+            concentration_data: Dict with concentration as key and list of measurements as values
+            
+        Returns:
+            Dict with validation results
+        """
+        validation_results = {
+            'is_compliant': True,
+            'failed_concentrations': [],
+            'cv_values': {},
+            'overall_status': 'PASS'
         }
         
-        # Test 2: Parallelism (Slope difference)
-        slope_diff = abs(anova_results['standard_slope'] - anova_results['test_slope'])
-        # Simplified parallelism test - in full implementation would use proper F-test
-        validity_tests['parallelism'] = {
-            'slope_difference': slope_diff,
-            'standard_slope': anova_results['standard_slope'],
-            'test_slope': anova_results['test_slope'],
-            'valid': slope_diff < 0.2  # Simplified criterion
-        }
-        
-        # Test 3: Significance of potency estimate
-        validity_tests['potency_significance'] = {
-            'f_value': anova_results['preparation_f'],
-            'p_value': anova_results['preparation_p'],
-            'significant': anova_results['preparation_p'] < self.alpha,
-            'valid': anova_results['preparation_p'] < self.alpha
-        }
-        
-        # Overall validity
-        validity_tests['overall_validity'] = (
-            validity_tests['linearity']['valid'] and
-            validity_tests['parallelism']['valid'] and
-            validity_tests['potency_significance']['valid']
-        )
-        
-        return validity_tests
-    
-    def _calculate_confidence_intervals(self, potency_results: Dict[str, Any], 
-                                       anova_results: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate confidence intervals for potency estimate"""
-        # Simplified confidence interval calculation
-        # In full implementation, would use proper statistical methods
-        
-        error_ms = anova_results['error_ms']
-        df = anova_results['error_df']
-        
-        if df > 0:
-            t_critical = stats.t.ppf(1 - self.alpha/2, df)
-            
-            # Approximate standard error (simplified)
-            se_log_potency = math.sqrt(error_ms) * 0.1  # Simplified approximation
-            
-            log_potency = potency_results['log_potency']
-            
-            # Confidence interval for log potency
-            log_ci_lower = log_potency - t_critical * se_log_potency
-            log_ci_upper = log_potency + t_critical * se_log_potency
-            
-            # Convert to potency scale
-            ci_lower = 10 ** log_ci_lower
-            ci_upper = 10 ** log_ci_upper
-            
-            return {
-                'confidence_level': self.confidence_level * 100,
-                'potency_ci_lower': ci_lower,
-                'potency_ci_upper': ci_upper,
-                'log_potency_ci_lower': log_ci_lower,
-                'log_potency_ci_upper': log_ci_upper,
-                'standard_error': se_log_potency
-            }
-        else:
-            return {
-                'error': 'Insufficient degrees of freedom for confidence interval calculation'
-            }
-    
-    def _determine_design_type(self, standard_doses: List[float], 
-                              test_doses: List[float]) -> str:
-        """Determine the assay design type"""
-        std_levels = len(standard_doses)
-        test_levels = len(test_doses)
-        
-        if std_levels == 2 and test_levels == 2:
-            return "2+2"
-        elif std_levels == 3 and test_levels == 3:
-            return "3+3"
-        else:
-            return f"{std_levels}+{test_levels}"
-    
-    def calculate_basic_statistics(self, zone_diameters: List[float]) -> Dict[str, Any]:
-        """Calculate basic statistics with enhanced bioassay-specific metrics"""
-        if not zone_diameters:
-            return {}
-        
-        diameters = np.array(zone_diameters, dtype=float)
-        
-        # Basic statistics
-        stats_dict = {
-            'count': len(diameters),
-            'mean': float(np.mean(diameters)),
-            'median': float(np.median(diameters)),
-            'std_dev': float(np.std(diameters, ddof=1)) if len(diameters) > 1 else 0.0,
-            'min': float(np.min(diameters)),
-            'max': float(np.max(diameters)),
-            'range': float(np.max(diameters) - np.min(diameters))
-        }
-        
-        # Coefficient of variation
-        if stats_dict['mean'] > 0:
-            stats_dict['cv_percent'] = (stats_dict['std_dev'] / stats_dict['mean']) * 100
-        else:
-            stats_dict['cv_percent'] = 0.0
-        
-        # Additional bioassay-specific statistics
-        if len(diameters) >= 3:
-            # Outlier detection using modified Z-score
-            median = stats_dict['median']
-            mad = np.median(np.abs(diameters - median))  # Median Absolute Deviation
-            
-            if mad > 0:
-                modified_z_scores = 0.6745 * (diameters - median) / mad
-                outlier_threshold = 3.5
-                outliers = np.abs(modified_z_scores) > outlier_threshold
+        for concentration, measurements in concentration_data.items():
+            if len(measurements) < 2:
+                continue
                 
-                stats_dict['outliers'] = {
-                    'count': int(np.sum(outliers)),
-                    'indices': [int(i) for i in np.where(outliers)[0]],
-                    'values': [float(diameters[i]) for i in np.where(outliers)[0]]
+            mean_val = np.mean(measurements)
+            std_val = np.std(measurements)
+            cv_percent = (std_val / mean_val * 100) if mean_val > 0 else 0
+            
+            validation_results['cv_values'][concentration] = {
+                'cv_percent': cv_percent,
+                'mean': mean_val,
+                'std': std_val
+            }
+            
+            if cv_percent > self.MAX_CV_PERCENT:
+                validation_results['is_compliant'] = False
+                validation_results['failed_concentrations'].append({
+                    'concentration': concentration,
+                    'cv_percent': cv_percent,
+                    'threshold': self.MAX_CV_PERCENT
+                })
+        
+        if not validation_results['is_compliant']:
+            validation_results['overall_status'] = 'FAIL'
+            
+        return validation_results
+    
+    def validate_concentration_range(self, concentrations: List[float]) -> Dict:
+        """
+        Validate concentration range coverage (USP-81 requirement: ≥3 concentration points)
+        
+        Args:
+            concentrations: List of concentration values
+            
+        Returns:
+            Dict with validation results
+        """
+        validation_results = {
+            'is_compliant': len(concentrations) >= self.MIN_CONCENTRATION_POINTS,
+            'concentration_count': len(concentrations),
+            'required_count': self.MIN_CONCENTRATION_POINTS,
+            'concentrations': sorted(concentrations),
+            'overall_status': 'PASS' if len(concentrations) >= self.MIN_CONCENTRATION_POINTS else 'FAIL'
+        }
+        
+        if validation_results['is_compliant']:
+            # Calculate concentration range
+            min_conc = min(concentrations)
+            max_conc = max(concentrations)
+            validation_results['concentration_range'] = {
+                'min': min_conc,
+                'max': max_conc,
+                'range': max_conc - min_conc
+            }
+            
+        return validation_results
+    
+    def calculate_potency(self, standard_data: Dict, sample_data: Dict) -> Dict:
+        """
+        Calculate potency using USP-81 methodology
+        
+        Args:
+            standard_data: Standard curve data
+            sample_data: Sample measurement data
+            
+        Returns:
+            Dict with potency calculation results
+        """
+        try:
+            # Extract standard curve data
+            standard_concentrations = list(standard_data.keys())
+            standard_responses = [np.mean(measurements) for measurements in standard_data.values()]
+            
+            # Fit standard curve (log-linear relationship)
+            log_concentrations = np.log10(standard_concentrations)
+            
+            # Linear regression
+            coeffs = np.polyfit(log_concentrations, standard_responses, 1)
+            slope = coeffs[0]
+            intercept = coeffs[1]
+            
+            # Calculate sample potency
+            sample_response = np.mean(sample_data.get('measurements', [0]))
+            
+            if slope != 0:
+                log_sample_conc = (sample_response - intercept) / slope
+                sample_concentration = 10 ** log_sample_conc
+                
+                # Calculate potency relative to standard
+                potency_result = {
+                    'sample_response': sample_response,
+                    'calculated_concentration': sample_concentration,
+                    'standard_curve': {
+                        'slope': slope,
+                        'intercept': intercept,
+                        'r_squared': self._calculate_r_squared(log_concentrations, standard_responses, coeffs)
+                    },
+                    'confidence_interval': self._calculate_confidence_interval(
+                        log_concentrations, standard_responses, sample_response, slope, intercept
+                    )
                 }
             else:
-                stats_dict['outliers'] = {'count': 0, 'indices': [], 'values': []}
-            
-            # Normality test (Shapiro-Wilk for small samples)
-            if len(diameters) <= 50:
-                shapiro_stat, shapiro_p = stats.shapiro(diameters)
-                stats_dict['normality_test'] = {
-                    'test': 'Shapiro-Wilk',
-                    'statistic': float(shapiro_stat),
-                    'p_value': float(shapiro_p),
-                    'normal_distribution': shapiro_p > 0.05
+                potency_result = {
+                    'error': 'Invalid standard curve slope',
+                    'sample_response': sample_response
                 }
+                
+            return potency_result
+            
+        except Exception as e:
+            return {'error': f'Potency calculation failed: {str(e)}'}
+    
+    def _calculate_r_squared(self, x: List[float], y: List[float], coeffs: List[float]) -> float:
+        """Calculate R-squared value for curve fit"""
+        try:
+            y_pred = np.polyval(coeffs, x)
+            ss_res = np.sum((y - y_pred) ** 2)
+            ss_tot = np.sum((y - np.mean(y)) ** 2)
+            return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+        except:
+            return 0
+    
+    def _calculate_confidence_interval(self, x: List[float], y: List[float], 
+                                     sample_response: float, slope: float, intercept: float) -> Dict:
+        """Calculate confidence interval for potency estimate"""
+        try:
+            n = len(x)
+            if n < 3:
+                return {'lower': None, 'upper': None, 'confidence_level': 0.95}
+            
+            # Calculate standard error of estimate
+            y_pred = np.polyval([slope, intercept], x)
+            residuals = y - y_pred
+            mse = np.sum(residuals ** 2) / (n - 2)
+            
+            # Calculate prediction interval
+            x_mean = np.mean(x)
+            x_var = np.sum((x - x_mean) ** 2)
+            
+            # For 95% confidence interval
+            t_value = 2.0  # Approximate for n > 30, should use t-distribution for small n
+            
+            sample_x = (sample_response - intercept) / slope if slope != 0 else 0
+            
+            se_pred = np.sqrt(mse * (1 + 1/n + (sample_x - x_mean)**2 / x_var))
+            margin = t_value * se_pred
+            
+            return {
+                'lower': sample_x - margin,
+                'upper': sample_x + margin,
+                'confidence_level': 0.95,
+                'standard_error': se_pred
+            }
+        except:
+            return {'lower': None, 'upper': None, 'confidence_level': 0.95}
+    
+    def comprehensive_usp81_validation(self, assay_data: Dict) -> USP81ValidationResult:
+        """
+        Comprehensive USP-81 validation
         
-        # Quality assessment based on CV
-        cv = stats_dict['cv_percent']
-        if cv < 5:
-            stats_dict['precision_assessment'] = 'Excellent'
-        elif cv < 10:
-            stats_dict['precision_assessment'] = 'Good'
-        elif cv < 15:
-            stats_dict['precision_assessment'] = 'Acceptable'
+        Args:
+            assay_data: Complete assay data including concentrations and measurements
+            
+        Returns:
+            USP81ValidationResult with comprehensive validation
+        """
+        checks_passed = 0
+        total_checks = 4
+        details = {}
+        recommendations = []
+        
+        # Check 1: Minimum replicates
+        replicate_validation = self.validate_minimum_replicates(assay_data.get('concentration_data', {}))
+        details['replicate_validation'] = replicate_validation
+        if replicate_validation['is_compliant']:
+            checks_passed += 1
         else:
-            stats_dict['precision_assessment'] = 'Poor - Review methodology'
+            recommendations.append(f"Ensure ≥{self.MIN_REPLICATES} replicates per concentration")
         
-        # Round values for presentation
-        for key, value in stats_dict.items():
-            if isinstance(value, float):
-                stats_dict[key] = round(value, 3)
+        # Check 2: CV% threshold
+        cv_validation = self.validate_cv_threshold(assay_data.get('concentration_data', {}))
+        details['cv_validation'] = cv_validation
+        if cv_validation['is_compliant']:
+            checks_passed += 1
+        else:
+            recommendations.append(f"Ensure CV% ≤ {self.MAX_CV_PERCENT}% for all concentrations")
         
-        return stats_dict
+        # Check 3: Concentration range
+        concentrations = list(assay_data.get('concentration_data', {}).keys())
+        concentration_validation = self.validate_concentration_range(concentrations)
+        details['concentration_validation'] = concentration_validation
+        if concentration_validation['is_compliant']:
+            checks_passed += 1
+        else:
+            recommendations.append(f"Ensure ≥{self.MIN_CONCENTRATION_POINTS} concentration points")
+        
+        # Check 4: Zone measurement precision
+        zone_validation = self._validate_zone_measurements(assay_data)
+        details['zone_validation'] = zone_validation
+        if zone_validation['is_compliant']:
+            checks_passed += 1
+        else:
+            recommendations.append("Ensure sufficient zone measurements for statistical validity")
+        
+        # Calculate overall score
+        score = (checks_passed / total_checks) * 100
+        
+        # Determine compliance status
+        is_compliant = score >= 80  # 80% threshold for compliance
+        
+        # Add general recommendations
+        if is_compliant:
+            recommendations.append("Consider implementing additional USP-81 features for enhanced compliance")
+        else:
+            recommendations.extend([
+                "Review and improve measurement precision",
+                "Implement quality control procedures",
+                "Consider additional concentration points if needed"
+            ])
+        
+        return USP81ValidationResult(
+            is_compliant=is_compliant,
+            score=score,
+            checks_passed=checks_passed,
+            total_checks=total_checks,
+            details=details,
+            recommendations=recommendations
+        )
+    
+    def _validate_zone_measurements(self, assay_data: Dict) -> Dict:
+        """Validate zone measurement precision"""
+        zone_data = assay_data.get('zone_data', {})
+        
+        validation_result = {
+            'is_compliant': True,
+            'total_zones': 0,
+            'valid_zones': 0,
+            'overall_status': 'PASS'
+        }
+        
+        total_zones = 0
+        valid_zones = 0
+        
+        for standard, zones in zone_data.items():
+            if isinstance(zones, dict) and 'measurements' in zones:
+                zone_count = len(zones['measurements'])
+                total_zones += zone_count
+                
+                if zone_count >= self.MIN_ZONE_MEASUREMENTS:
+                    valid_zones += 1
+                else:
+                    validation_result['is_compliant'] = False
+        
+        validation_result['total_zones'] = total_zones
+        validation_result['valid_zones'] = valid_zones
+        
+        if not validation_result['is_compliant']:
+            validation_result['overall_status'] = 'FAIL'
+        
+        return validation_result
+    
+    def generate_usp81_report_data(self, validation_result: USP81ValidationResult, 
+                                  assay_data: Dict) -> Dict:
+        """
+        Generate data for USP-81 compliance report
+        
+        Args:
+            validation_result: USP-81 validation results
+            assay_data: Original assay data
+            
+        Returns:
+            Dict with formatted report data
+        """
+        report_data = {
+            'validation_summary': {
+                'overall_compliance': validation_result.is_compliant,
+                'compliance_score': f"{validation_result.score:.1f}%",
+                'checks_passed': f"{validation_result.checks_passed}/{validation_result.total_checks}",
+                'status': 'COMPLIANT' if validation_result.is_compliant else 'NON-COMPLIANT'
+            },
+            'detailed_results': validation_result.details,
+            'recommendations': validation_result.recommendations,
+            'assay_information': {
+                'total_concentrations': len(assay_data.get('concentration_data', {})),
+                'total_measurements': sum(len(measurements) for measurements in 
+                                        assay_data.get('concentration_data', {}).values()),
+                'concentration_range': self._get_concentration_range(assay_data)
+            },
+            'usp81_requirements': {
+                'minimum_replicates': f"≥{self.MIN_REPLICATES}",
+                'max_cv_percent': f"≤{self.MAX_CV_PERCENT}%",
+                'min_concentration_points': f"≥{self.MIN_CONCENTRATION_POINTS}",
+                'min_zone_measurements': f"≥{self.MIN_ZONE_MEASUREMENTS}"
+            }
+        }
+        
+        return report_data
+    
+    def _get_concentration_range(self, assay_data: Dict) -> Dict:
+        """Extract concentration range information"""
+        concentrations = list(assay_data.get('concentration_data', {}).keys())
+        if concentrations:
+            return {
+                'min': min(concentrations),
+                'max': max(concentrations),
+                'range': max(concentrations) - min(concentrations)
+            }
+        return {'min': 0, 'max': 0, 'range': 0}
